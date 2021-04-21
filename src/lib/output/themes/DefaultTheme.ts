@@ -55,25 +55,25 @@ export class DefaultTheme extends Theme {
         {
             kind: [ReflectionKind.Class],
             isLeaf: false,
-            directory: "classes",
+            directory: "symbols",
             template: "reflection.hbs",
         },
         {
             kind: [ReflectionKind.Interface],
             isLeaf: false,
-            directory: "interfaces",
+            directory: "symbols",
             template: "reflection.hbs",
         },
         {
             kind: [ReflectionKind.Enum],
             isLeaf: false,
-            directory: "enums",
+            directory: "symbols",
             template: "reflection.hbs",
         },
         {
             kind: [ReflectionKind.Namespace, ReflectionKind.Module],
             isLeaf: false,
-            directory: "modules",
+            directory: "symbols",
             template: "reflection.hbs",
         },
     ];
@@ -159,11 +159,11 @@ export class DefaultTheme extends Theme {
     getNavigation(project: ProjectReflection): NavigationItem {
         const builder = new NavigationBuilder(
             project,
-            project,
-            this.application.options.getValue("entryPoints").length > 1
+            project
         );
         return builder.build(
-            this.application.options.getValue("readme") !== "none"
+            this.application.options.getValue("readme") !== "none",
+            this.application.options.getValue("indexTitle")
         );
     }
 
@@ -355,6 +355,12 @@ export class DefaultTheme extends Theme {
         if (reflection.flags.isExternal) {
             classes.push("tsd-is-external");
         }
+        if (reflection.flags.isExtension) {
+            classes.push("tsd-is-extension");
+        }
+        if (reflection.flags.isStorage) {
+            classes.push("tsd-is-storage");
+        }
 
         reflection.cssClasses = classes.join(" ");
     }
@@ -397,20 +403,20 @@ export class DefaultTheme extends Theme {
 export class NavigationBuilder {
     constructor(
         private project: ProjectReflection,
-        private entryPoint: ContainerReflection,
-        private multipleEntryPoints: boolean
+        private entryPoint: ContainerReflection
     ) {}
 
     /**
      * Build the navigation structure.
      *
      * @param hasReadmeFile True if the project has a readme
+     * @param indexTitle The title to be used on the index page and navigation
      * @returns The root node of the generated navigation structure.
      */
-    build(hasReadmeFile: boolean): NavigationItem {
+    build(hasReadmeFile: boolean, indexTitle: string): NavigationItem {
         const root = new NavigationItem("Index", "index.html");
         const sidebarRoot = new NavigationItem(
-            this.multipleEntryPoints ? "Modules" : "Exports",
+            indexTitle,
             hasReadmeFile ? "modules.html" : "index.html",
             root
         );

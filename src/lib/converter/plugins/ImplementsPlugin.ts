@@ -2,6 +2,7 @@ import * as ts from "typescript";
 import {
     DeclarationReflection,
     Reflection,
+    ReflectionFlag,
     ReflectionKind,
     SignatureReflection,
 } from "../../models/reflections/index";
@@ -195,8 +196,15 @@ export class ImplementsPlugin extends ConverterComponent {
             reflection.kindOf(ReflectionKind.Class) &&
             reflection.implementedTypes
         ) {
+            const removeList: ReferenceType[] = [];
             reflection.implementedTypes.forEach((type: Type) => {
                 if (!(type instanceof ReferenceType)) {
+                    return;
+                }
+
+                // If the implemented type isn't documented, mark it for removal from the list
+                if (type.reflection === undefined) {
+                    removeList.push(type);
                     return;
                 }
 
@@ -211,6 +219,8 @@ export class ImplementsPlugin extends ConverterComponent {
                     );
                 }
             });
+            // Remove the types marked as undocumented
+            reflection.implementedTypes = reflection.implementedTypes.filter(elt => removeList.indexOf(elt as ReferenceType) < 0);
         }
 
         if (
@@ -415,16 +425,20 @@ function createLink(
             return;
         }
 
-        if (isOverwrite) {
+        if (isOverwrite) {  // (actually isInherit)
             target.inheritedFrom ??= ReferenceType.createBrokenReference(
                 name,
                 project
             );
+            if(context.converter.application.options.getValue("excludeInherited")) {
+                project.removeReflection(target);  // remove inherited reflection
+            }
         } else {
             target.overwrites ??= ReferenceType.createBrokenReference(
                 name,
                 project
             );
+            target.setFlag(ReflectionFlag.Override, true);
         }
     }
 }

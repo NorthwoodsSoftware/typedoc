@@ -53,6 +53,9 @@ export class Converter extends ChildableComponent<
     @BindOption("excludeProtected")
     excludeProtected!: boolean;
 
+    @BindOption("excludeInherited")
+    excludeInherited!: boolean;
+
     /**
      * General events
      */
@@ -244,6 +247,7 @@ export class Converter extends ChildableComponent<
                 ts.SyntaxKind.NamespaceExport,
                 ts.SyntaxKind.ExportSpecifier,
             ],
+            [ReflectionKind.Constant]: []
         }[kind];
 
         const declarations = symbol.getDeclarations() ?? [];

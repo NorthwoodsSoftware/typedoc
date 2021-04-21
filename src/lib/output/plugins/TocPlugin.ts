@@ -89,6 +89,18 @@ export class TocPlugin extends RendererComponent {
                     return;
                 }
 
+                // don't add unindexed items to the navigation
+                if (child.comment) {
+                    const tags = child.comment.tags;
+                    if (tags) {
+                        for (let i = 0; i < tags.length; i++) {
+                            if (tags[i].tagName === 'unindexed') {
+                                return;
+                            }
+                        }
+                    }
+                }
+
                 const item = NavigationItem.create(child, parent, true);
                 if (trail.includes(child)) {
                     item.isInPath = true;

@@ -32,13 +32,14 @@ export class GroupPlugin extends ConverterComponent {
 
         ReflectionKind.Constructor,
         ReflectionKind.Event,
-        ReflectionKind.Property,
         ReflectionKind.Variable,
         ReflectionKind.Function,
         ReflectionKind.Accessor,
+        ReflectionKind.Property,
         ReflectionKind.Method,
+        ReflectionKind.Constant,
         ReflectionKind.ObjectLiteral,
-
+        
         ReflectionKind.Parameter,
         ReflectionKind.TypeParameter,
         ReflectionKind.TypeLiteral,
@@ -66,6 +67,8 @@ export class GroupPlugin extends ConverterComponent {
         [ReflectionKind.Enum]: "Enumerations",
         [ReflectionKind.EnumMember]: "Enumeration members",
         [ReflectionKind.TypeAlias]: "Type aliases",
+        [ReflectionKind.Accessor]: "Properties",
+        [ReflectionKind.Constant]: "Constants"
     };
 
     /**
@@ -246,13 +249,14 @@ export class GroupPlugin extends ConverterComponent {
         const aWeight = GroupPlugin.WEIGHTS.indexOf(a.kind);
         const bWeight = GroupPlugin.WEIGHTS.indexOf(b.kind);
         if (aWeight === bWeight) {
-            if (a.flags.isStatic && !b.flags.isStatic) {
-                return 1;
-            }
-            if (!a.flags.isStatic && b.flags.isStatic) {
-                return -1;
-            }
             if (a.name === b.name) {
+                // Same name? Instance first
+                if (a.flags.isStatic && !b.flags.isStatic) {
+                    return 1;
+                }
+                if (!a.flags.isStatic && b.flags.isStatic) {
+                    return -1;
+                }
                 return 0;
             }
             return a.name > b.name ? 1 : -1;

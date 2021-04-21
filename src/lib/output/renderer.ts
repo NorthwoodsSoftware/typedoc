@@ -87,6 +87,18 @@ export class Renderer extends ChildableComponent<
     @BindOption("highlightTheme")
     highlightTheme!: ShikiTheme;
 
+    @BindOption("hideGoJSNav")
+    hideGoJSNav!: boolean;
+
+    @BindOption("indexTitle")
+    indexTitle!: string;
+
+    @BindOption("topCopyright")
+    topCopyright!: string;
+
+    @BindOption("showInheritedDefault")
+    showInheritedDefault!: boolean;
+
     /**
      * Render the given project reflection to the specified output directory.
      *

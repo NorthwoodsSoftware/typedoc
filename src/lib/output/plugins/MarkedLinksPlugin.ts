@@ -23,6 +23,12 @@ export class MarkedLinksPlugin extends ContextAwareRendererComponent {
     @BindOption("listInvalidSymbolLinks")
     listInvalidSymbolLinks!: boolean;
 
+    @BindOption("jsDocLinks")
+    jsDocLinks!: boolean;
+
+    @BindOption("isGoCloudStorage")
+    isGoCloudStorage!: boolean;
+
     private warnings: string[] = [];
 
     /**
@@ -65,6 +71,7 @@ export class MarkedLinksPlugin extends ContextAwareRendererComponent {
                     match,
                     split.target,
                     split.caption,
+                    false,
                     monospace
                 );
             }
@@ -87,11 +94,34 @@ export class MarkedLinksPlugin extends ContextAwareRendererComponent {
                 content: string
             ): string => {
                 const split = MarkedLinksPlugin.splitLinkText(content);
-                const target = split.target;
-                const caption = leading || split.caption;
+                let target = split.target;
+                let caption = leading || split.caption;
+                let searchUp = false;
+
+                // Convert any JSDoc-style @link syntax, not fully featured: https://github.com/TypeStrong/typedoc/issues/488
+                if (this.jsDocLinks) {
+                    if (caption === target) {
+                        caption = caption.replace(/#/, '.');
+                        // Remove leading ., if there is one
+                        if (caption.charAt(0) === '.') {
+                            caption = caption.slice(1);
+                        }
+                    }
+                    // Static member syntax: 'Foo.bar'
+                    target = target.replace(/\./, '.@static-');
+                    // Instance member syntax: 'Foo#bar'
+                    target = target.replace(/#/, '.');
+                    if (target.charAt(0) === '.') {
+                        target = target.slice(1);
+                        // If this link starts with #, it means we're looking for something within this class,
+                        // so we'll also look in the superclasses since it could be inherited
+                        searchUp = true;
+                    }
+                }
+
                 const monospace = tagName === "linkcode";
 
-                return this.buildLink(match, target, caption, monospace);
+                return this.buildLink(match, target, caption, searchUp, monospace);
             }
         );
     }
@@ -109,6 +139,7 @@ export class MarkedLinksPlugin extends ContextAwareRendererComponent {
         original: string,
         target: string,
         caption: string,
+        searchUp: boolean,
         monospace?: boolean
     ): string {
         let attributes = "";
@@ -117,7 +148,7 @@ export class MarkedLinksPlugin extends ContextAwareRendererComponent {
         } else {
             let reflection: Reflection | undefined;
             if (this.reflection) {
-                reflection = this.reflection.findReflectionByName(target);
+                reflection = this.reflection.findReflectionByName(target, searchUp);
             } else if (this.project) {
                 reflection = this.project.findReflectionByName(target);
             }

@@ -1,5 +1,6 @@
 import {
     Reflection,
+    ReflectionFlag,
     ContainerReflection,
     DeclarationReflection,
     CommentTag,
@@ -158,6 +159,12 @@ export class CategoryPlugin extends ConverterComponent {
                 return;
             }
             for (const childCat of childCategories) {
+                if (childCat.indexOf('Extension') >= 0) {
+                    child.setFlag(ReflectionFlag.Extension);
+                }
+                if (childCat.indexOf('Storage') >= 0) {
+                    child.setFlag(ReflectionFlag.Storage);
+                }
                 let category = categories.find((cat) => cat.title === childCat);
                 if (category) {
                     category.children.push(child);

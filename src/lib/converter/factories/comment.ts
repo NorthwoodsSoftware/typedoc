@@ -251,6 +251,16 @@ export function parseComment(
         }
 
         currentTag = new CommentTag(tagName, paramName, line);
+        if (!comment.tags) {
+            comment.tags = [];
+        } else if (tagName === 'see') {
+            for (let i = comment.tags.length - 1; i >= 0; i--) {
+                if (comment.tags[i].tagName === 'see') {
+                    comment.tags[i].text += ', ' + line;
+                    return;
+                }
+            }
+        }
         comment.tags.push(currentTag);
     }
 

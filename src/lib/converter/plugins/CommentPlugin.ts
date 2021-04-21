@@ -101,6 +101,18 @@ export class CommentPlugin extends ConverterComponent {
             comment.removeTags("event");
         }
 
+        if (comment.hasTag("expose")) {
+            reflection.setFlag(ReflectionFlag.Virtual);
+            if (reflection.kindOf(ReflectionKind.CallSignature)) {
+                reflection.parent?.setFlag(ReflectionFlag.Virtual);
+            }
+            comment.removeTags("expose");
+        }
+
+        if (comment.hasTag("constant") && (reflection.kindOf(ReflectionKind.Property) || reflection.kindOf(ReflectionKind.Accessor))) {
+            reflection.kind = ReflectionKind.Constant;
+        }
+
         if (
             reflection.kindOf(
                 ReflectionKind.Module | ReflectionKind.Namespace

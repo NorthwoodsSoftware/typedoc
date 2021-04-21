@@ -25,6 +25,9 @@ export class LayoutPlugin extends RendererComponent {
         const layout = this.owner
             .theme!.resources.layouts.getResource("default")!
             .getTemplate();
-        page.contents = layout(page);
+        page.contents = layout(page, { 
+            allowProtoMethodsByDefault: true, 
+            allowProtoPropertiesByDefault: true
+        });
     }
 }

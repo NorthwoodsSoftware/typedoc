@@ -13,7 +13,7 @@ export class AssetsPlugin extends RendererComponent {
     /**
      * Should the default assets always be copied to the output directory?
      */
-    copyDefaultAssets = true;
+    copyDefaultAssets = false;
 
     /**
      * Create a new AssetsPlugin instance.

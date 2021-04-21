@@ -67,6 +67,11 @@ export function addTypeDocOptions(options: Pick<Options, "addDeclaration">) {
         type: ParameterType.Boolean,
     });
     options.addDeclaration({
+        name: "excludeInherited",
+        help: "Ignores inherited variables and methods",
+        type: ParameterType.Boolean,
+    });
+    options.addDeclaration({
         name: "disableSources",
         help:
             "Disables setting the source of a reflection when documenting it.",
@@ -215,6 +220,33 @@ export function addTypeDocOptions(options: Pick<Options, "addDeclaration">) {
         type: ParameterType.Array,
     });
     options.addDeclaration({
+        name: "hideGoJSNav",
+        help:
+            "Do not print the GoJS site navigation at the top of the page.",
+        type: ParameterType.Boolean,
+    });
+    options.addDeclaration({
+        name: "indexTitle",
+        help:
+            "Sets the title to be displayed for the index and navigation.",
+        type: ParameterType.String,
+        defaultValue: "Index",
+    });
+    options.addDeclaration({
+        name: "topCopyright",
+        help:
+            "Sets the information to display in the top copyright before the version number.",
+        type: ParameterType.String,
+        defaultValue: "",
+    });
+    options.addDeclaration({
+        name: "showInheritedDefault",
+        help:
+            "TODO",
+        type: ParameterType.Boolean,
+        defaultValue: false,
+    });
+    options.addDeclaration({
         name: "disableOutputCheck",
         help:
             "Should TypeDoc disable the testing and cleaning of the output directory?",
@@ -259,6 +291,12 @@ export function addTypeDocOptions(options: Pick<Options, "addDeclaration">) {
         name: "listInvalidSymbolLinks",
         help:
             "Emits a list of broken symbol [[navigation]] links after documentation generation",
+        type: ParameterType.Boolean,
+    });
+    options.addDeclaration({
+        name: "jsDocLinks",
+        help:
+            "Parse JSDoc-style @link inline tags.",
         type: ParameterType.Boolean,
     });
     options.addDeclaration({

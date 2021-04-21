@@ -46,6 +46,10 @@ export class ReflectionSerializer extends ReflectionSerializerComponent<Reflecti
             "isConst",
             "isLet",
             "isReadonly",
+            "isVirtual",
+            "isOverride",
+            "isExtension",
+            "isStorage",
         ] as const;
 
         for (const key of flags) {

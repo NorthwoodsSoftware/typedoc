@@ -18,8 +18,6 @@
 
         // Library
         "preserveConstEnums": true,
-        "declaration": true,
-        "sourceMap": true,
         "isolatedModules": true,
 
         // Output
