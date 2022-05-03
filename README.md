@@ -2,8 +2,8 @@
 
 Documentation generator for TypeScript projects.
 
-![CI](https://github.com/TypeStrong/typedoc/workflows/CI/badge.svg)
-![NPM Version](https://badge.fury.io/js/typedoc.svg)
+[![CI](https://github.com/TypeStrong/typedoc/workflows/CI/badge.svg)](https://github.com/TypeStrong/typedoc/actions)
+[![NPM Version](https://img.shields.io/npm/v/typedoc?color=33cd56&logo=npm)](https://www.npmjs.com/package/typedoc)
 
 ## Documentation
 
@@ -27,11 +27,47 @@ just specify the entry point of your library:
 typedoc src/index.ts
 ```
 
-If you have multiple entry points, specify each of them. If you specify a directory, TypeDoc
-will treat each file contained within it as an entry point.
+If you have multiple entry points, specify each of them.
 
 ```text
 typedoc package1/index.ts package2/index.ts
+```
+
+If you specify a directory, TypeDoc will use the `entryPointStrategy` option to determine how to resolve it.
+By default, TypeDoc will search for a file called `index` under the directory.
+
+### Monorepos / Workspaces
+
+If your codebase is comprised of one or more npm packages, you can pass the paths to these
+packages and TypeDoc will attempt to determine entry points based on `package.json`'s `main`
+property (with default value `index.js`) and if it wasn't found, based on `types` property.
+If any of the packages given are the root of an [npm Workspace](https://docs.npmjs.com/cli/v7/using-npm/workspaces)
+or a [Yarn Workspace](https://classic.yarnpkg.com/en/docs/workspaces/) TypeDoc will find all
+the `workspaces` defined in the `package.json`. In order to find your entry points, TypeDoc requires
+either that you turn on sourcemaps so that it can discover the original TS file, or that you
+specify `"typedocMain": "src/index.ts"` to explicitly state where the package entry point is.
+Supports wildcard paths in the same fashion as those found in npm or Yarn workspaces.
+
+#### Single npm module
+
+```bash
+typedoc --entryPointStrategy packages .
+```
+
+#### Monorepo with npm/Yarn workspace at the root
+
+```bash
+typedoc --entryPointStrategy packages .
+```
+
+#### Monorepo with manually specified sub-packages to document
+
+This can be useful if you do not want all your workspaces to be processed.
+Accepts the same paths as would go in the `package.json`'s workspaces
+
+```bash
+# Note the single quotes prevent shell wildcard expansion, allowing typedoc to do the expansion
+typedoc --entryPointStrategy packages a-package 'some-more-packages/*' 'some-other-packages/*'
 ```
 
 ### Arguments
@@ -63,8 +99,8 @@ For a complete list of the command line arguments run `typedoc --help` or visit
 
 #### Theming
 
--   `--theme <default|minimal|path/to/theme>`<br>
-    Specify the path to the theme that should be used.
+-   `--theme <default|plugin defined theme>`<br>
+    Specify the theme that should be used.
 -   `--name <Documentation title>`<br>
     Set the name of the project that will be used in the header of the template.
 -   `--readme <path/to/readme|none>`<br>
@@ -91,5 +127,5 @@ For more information, read the [contribution guide](https://github.com/TypeStron
 ## License
 
 Copyright (c) 2015 [Sebastian Lenz](https://typedoc.org).<br>
-Copyright (c) 2016-2020 [TypeDoc Contributors](https://github.com/TypeStrong/typedoc/graphs/contributors).<br>
+Copyright (c) 2016-2021 [TypeDoc Contributors](https://github.com/TypeStrong/typedoc/graphs/contributors).<br>
 Licensed under the Apache License 2.0.

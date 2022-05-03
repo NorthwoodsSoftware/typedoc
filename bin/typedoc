@@ -8,8 +8,9 @@ const ExitCodes = {
     OptionError: 1,
     NoEntryPoints: 2,
     CompileError: 3,
-    OutputError: 4,
-    ExceptionThrown: 5,
+    ValidationError: 4,
+    OutputError: 5,
+    ExceptionThrown: 6,
 };
 
 const td = require("..");
@@ -52,6 +53,12 @@ async function run(app) {
     if (app.logger.hasErrors()) {
         return ExitCodes.OptionError;
     }
+    if (
+        app.options.getValue("treatWarningsAsErrors") &&
+        app.logger.hasWarnings()
+    ) {
+        return ExitCodes.OptionError;
+    }
 
     if (app.options.getValue("entryPoints").length === 0) {
         app.logger.error("No entry points provided");
@@ -80,22 +87,48 @@ async function run(app) {
     if (!project) {
         return ExitCodes.CompileError;
     }
-
-    const out = app.options.getValue("out");
-    if (out) {
-        await app.generateDocs(project, out);
-    }
-    const json = app.options.getValue("json");
-    if (json) {
-        await app.generateJson(project, json);
+    if (
+        app.options.getValue("treatWarningsAsErrors") &&
+        app.logger.hasWarnings()
+    ) {
+        return ExitCodes.CompileError;
     }
 
-    if (!out && !json) {
-        await app.generateDocs(project, "./docs");
-    }
-
+    app.validate(project);
     if (app.logger.hasErrors()) {
-        return ExitCodes.OutputError;
+        return ExitCodes.ValidationError;
     }
+    if (
+        app.options.getValue("treatWarningsAsErrors") &&
+        app.logger.hasWarnings()
+    ) {
+        return ExitCodes.ValidationError;
+    }
+
+    if (app.options.getValue("emit") !== "none") {
+        const out = app.options.getValue("out");
+        if (out) {
+            await app.generateDocs(project, out);
+        }
+        const json = app.options.getValue("json");
+        if (json) {
+            await app.generateJson(project, json);
+        }
+
+        if (!out && !json) {
+            await app.generateDocs(project, "./docs");
+        }
+
+        if (app.logger.hasErrors()) {
+            return ExitCodes.OutputError;
+        }
+        if (
+            app.options.getValue("treatWarningsAsErrors") &&
+            app.logger.hasWarnings()
+        ) {
+            return ExitCodes.OutputError;
+        }
+    }
+
     return ExitCodes.Ok;
 }

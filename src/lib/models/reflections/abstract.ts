@@ -1,19 +1,21 @@
-import { SourceReference } from "../sources/file";
-import { Type } from "../types/index";
-import { Comment } from "../comments/comment";
-import { TypeParameterReflection } from "./type-parameter";
+import { ok } from "assert";
+import type { SourceReference } from "../sources/file";
+import type { Type } from "../types";
+import type { Comment } from "../comments/comment";
 import { splitUnquotedString } from "./utils";
-import { ProjectReflection } from "./project";
+import type { ProjectReflection } from "./project";
+import type { NeverIfInternal } from "../../utils";
+import { ReflectionKind } from "./kind";
 
 /**
  * Holds all data models used by TypeDoc.
  *
- * The [[BaseReflection]] is base class of all reflection models. The subclass [[ProjectReflection]]
- * serves as the root container for the current project while [[DeclarationReflection]] instances
+ * The {@link BaseReflection} is base class of all reflection models. The subclass {@link ProjectReflection}
+ * serves as the root container for the current project while {@link DeclarationReflection} instances
  * form the structure of the project. Most of the other classes in this namespace are referenced by this
  * two base classes.
  *
- * The models [[NavigationItem]] and [[UrlMapping]] are special as they are only used by the [[Renderer]]
+ * The models {@link NavigationItem} and {@link UrlMapping} are special as they are only used by the {@link Renderer}
  * while creating the final output.
  */
 
@@ -29,80 +31,6 @@ let REFLECTION_ID = 0;
  */
 export function resetReflectionID() {
     REFLECTION_ID = 0;
-}
-
-/**
- * Defines the available reflection kinds.
- */
-export enum ReflectionKind {
-    Project = 0x0,
-    Module = 0x1,
-    Namespace = 0x2,
-    Enum = 0x4,
-    // what happened to 8?
-    EnumMember = 0x10,
-    Variable = 0x20,
-    Function = 0x40,
-    Class = 0x80,
-    Interface = 0x100,
-    Constructor = 0x200,
-    Property = 0x400,
-    Method = 0x800,
-    CallSignature = 0x1000,
-    IndexSignature = 0x2000,
-    ConstructorSignature = 0x4000,
-    Parameter = 0x8000,
-    TypeLiteral = 0x10000,
-    TypeParameter = 0x20000,
-    Accessor = 0x40000,
-    GetSignature = 0x80000,
-    SetSignature = 0x100000,
-    ObjectLiteral = 0x200000,
-    TypeAlias = 0x400000,
-    Event = 0x800000,
-    Reference = 0x1000000,
-    Constant = 0x2000000,
-}
-
-export namespace ReflectionKind {
-    export const All = ReflectionKind.Constant * 2 - 1;
-
-    export const ClassOrInterface =
-        ReflectionKind.Class | ReflectionKind.Interface;
-    export const VariableOrProperty =
-        ReflectionKind.Variable | ReflectionKind.Property;
-    export const FunctionOrMethod =
-        ReflectionKind.Function | ReflectionKind.Method;
-    export const ClassMember =
-        ReflectionKind.Accessor |
-        ReflectionKind.Constructor |
-        ReflectionKind.Method |
-        ReflectionKind.Property |
-        ReflectionKind.Event;
-    export const SomeSignature =
-        ReflectionKind.CallSignature |
-        ReflectionKind.IndexSignature |
-        ReflectionKind.ConstructorSignature |
-        ReflectionKind.GetSignature |
-        ReflectionKind.SetSignature;
-    export const SomeModule = ReflectionKind.Namespace | ReflectionKind.Module;
-    export const SomeType =
-        ReflectionKind.Interface |
-        ReflectionKind.TypeLiteral |
-        ReflectionKind.TypeParameter |
-        ReflectionKind.TypeAlias;
-    export const SomeValue =
-        ReflectionKind.Variable |
-        ReflectionKind.Function |
-        ReflectionKind.ObjectLiteral;
-
-    /** @internal */
-    export const Inheritable =
-        ReflectionKind.Property |
-        ReflectionKind.Method |
-        ReflectionKind.Constructor |
-        ReflectionKind.Accessor |
-        ReflectionKind.Constant;
 }
 
 export enum ReflectionFlag {
@@ -135,7 +63,6 @@ const relevantFlags: ReflectionFlag[] = [
     ReflectionFlag.DefaultValue,
     ReflectionFlag.Rest,
     ReflectionFlag.Abstract,
-    ReflectionFlag.Let,
     ReflectionFlag.Const,
     ReflectionFlag.Readonly,
     ReflectionFlag.Virtual,
@@ -217,10 +144,6 @@ export class ReflectionFlags extends Array<string> {
         return this.hasFlag(ReflectionFlag.Const);
     }
 
-    get isLet() {
-        return this.hasFlag(ReflectionFlag.Let);
-    }
-
     get isReadonly() {
         return this.hasFlag(ReflectionFlag.Readonly);
     }
@@ -264,14 +187,6 @@ export class ReflectionFlags extends Array<string> {
                     this.setFlag(ReflectionFlag.Protected, false);
                 }
                 break;
-            case ReflectionFlag.Const:
-            case ReflectionFlag.Let:
-                this.setSingleFlag(flag, set);
-                this.setSingleFlag(
-                    (ReflectionFlag.Let | ReflectionFlag.Const) ^ flag,
-                    !set
-                );
-                break;
             default:
                 this.setSingleFlag(flag, set);
         }
@@ -296,18 +211,6 @@ export class ReflectionFlags extends Array<string> {
     }
 }
 
-export interface DefaultValueContainer extends Reflection {
-    defaultValue?: string;
-}
-
-export interface TypeContainer extends Reflection {
-    type?: Type;
-}
-
-export interface TypeParameterContainer extends Reflection {
-    typeParameters?: TypeParameterReflection[];
-}
-
 export enum TraverseProperty {
     Children,
     Parameters,
@@ -324,7 +227,9 @@ export interface TraverseCallback {
      * May return false to bail out of any further iteration. To preserve backwards compatibility, if
      * a function returns undefined, iteration must continue.
      */
-    (reflection: Reflection, property: TraverseProperty): boolean | void;
+    (reflection: Reflection, property: TraverseProperty):
+        | boolean
+        | NeverIfInternal<void>;
 }
 
 /**
@@ -351,12 +256,12 @@ export interface Decorator {
 /**
  * Base class for all reflection classes.
  *
- * While generating a documentation, TypeDoc generates an instance of [[ProjectReflection]]
+ * While generating a documentation, TypeDoc generates an instance of {@link ProjectReflection}
  * as the root for all reflections within the project. All other reflections are represented
- * by the [[DeclarationReflection]] class.
+ * by the {@link DeclarationReflection} class.
  *
  * This base class exposes the basic properties one may use to traverse the reflection tree.
- * You can use the [[children]] and [[parent]] properties to walk the tree. The [[groups]] property
+ * You can use the {@link ContainerReflection.children} and {@link parent} properties to walk the tree. The {@link groups} property
  * contains a list of all children grouped and sorted for being rendered.
  */
 export abstract class Reflection {
@@ -392,6 +297,15 @@ export abstract class Reflection {
      * The reflection this reflection is a child of.
      */
     parent?: Reflection;
+
+    get project(): ProjectReflection {
+        if (this.isProject()) return this;
+        ok(
+            this.parent,
+            "Tried to get the project on a reflection not in a project"
+        );
+        return this.parent.project;
+    }
 
     /**
      * The parsed documentation comment attached to this reflection.
@@ -443,11 +357,11 @@ export abstract class Reflection {
     /**
      * Url safe alias for this reflection.
      *
-     * @see [[BaseReflection.getAlias]]
+     * @see {@link BaseReflection.getAlias}
      */
     private _alias?: string;
 
-    private _aliases?: string[];
+    private _aliases?: Map<string, number>;
 
     /**
      * Create a new BaseReflection instance.
@@ -474,7 +388,8 @@ export abstract class Reflection {
     }
 
     /**
-     * Return the full name of this reflection.
+     * Return the full name of this reflection. Intended for use in debugging. For log messages
+     * intended to be displayed to the user for them to fix, prefer {@link getFriendlyFullName} instead.
      *
      * The full name contains the name of this reflection and the names of all parent reflections.
      *
@@ -484,6 +399,29 @@ export abstract class Reflection {
     getFullName(separator = "."): string {
         if (this.parent && !this.parent.isProject()) {
             return this.parent.getFullName(separator) + separator + this.name;
+        } else {
+            return this.name;
+        }
+    }
+
+    /**
+     * Return the full name of this reflection, with signature names dropped if possible without
+     * introducing ambiguity in the name.
+     */
+    getFriendlyFullName(): string {
+        if (this.parent && !this.parent.isProject()) {
+            if (
+                this.kindOf(
+                    ReflectionKind.ConstructorSignature |
+                        ReflectionKind.CallSignature |
+                        ReflectionKind.GetSignature |
+                        ReflectionKind.SetSignature
+                )
+            ) {
+                return this.parent.getFriendlyFullName();
+            }
+
+            return this.parent.getFriendlyFullName() + "." + this.name;
         } else {
             return this.name;
         }
@@ -519,16 +457,19 @@ export abstract class Reflection {
             }
 
             if (!target._aliases) {
-                target._aliases = [];
+                target._aliases = new Map();
             }
-            let suffix = "",
-                index = 0;
-            while (target._aliases.includes(alias + suffix)) {
-                suffix = "-" + (++index).toString();
+
+            let suffix = "";
+            if (!target._aliases.has(alias)) {
+                target._aliases.set(alias, 1);
+            } else {
+                const count = target._aliases.get(alias)!;
+                suffix = "-" + count.toString();
+                target._aliases.set(alias, count + 1);
             }
 
             alias += suffix;
-            target._aliases.push(alias);
             this._alias = alias;
         }
 
@@ -576,6 +517,7 @@ export abstract class Reflection {
                 }
                 return false;
             }
+            return true;
         });
 
         return result;
@@ -636,6 +578,7 @@ export abstract class Reflection {
         indent += "  ";
         this.traverse((child) => {
             lines.push(child.toStringHierarchy(indent));
+            return true;
         });
 
         return lines.join("\n");

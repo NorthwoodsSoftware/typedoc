@@ -17,7 +17,6 @@ import { resolveAliasedSymbol } from "./utils/symbols";
 
 /**
  * The context describes the current state the converter is in.
- * @internal
  */
 export class Context {
     /**
@@ -78,7 +77,7 @@ export class Context {
      * /** We should use this comment *&#47;
      * export * as Mod from "./mod"
      * ```
-     * Will be removed in 0.21.
+     * Will be removed in 0.23.
      * @internal
      */
     exportSymbol?: ts.Symbol;
@@ -92,8 +91,6 @@ export class Context {
      * Create a new Context instance.
      *
      * @param converter  The converter instance that has created the context.
-     * @param entryPoints  A list of all entry points for this project.
-     * @param checker  The TypeChecker instance returned by the TypeScript compiler.
      * @internal
      */
     constructor(
@@ -288,6 +285,7 @@ const builtInSymbolRegExp = /^__@(\w+)$/;
 const uniqueSymbolRegExp = /^__@(.*)@\d+$/;
 
 function getHumanName(name: string) {
+    // TS 4.0, 4.1, 4.2 - well known symbols are treated specially.
     let match = builtInSymbolRegExp.exec(name);
     if (match) {
         return `[Symbol.${match[1]}]`;

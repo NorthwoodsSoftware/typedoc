@@ -1,5 +1,19 @@
-import { Theme as ShikiTheme } from "shiki";
-import { LogLevel } from "../loggers";
+import type { Theme as ShikiTheme } from "shiki";
+import type { LogLevel } from "../loggers";
+import type { SortStrategy } from "../sort";
+import { isAbsolute, join, resolve } from "path";
+import type { EntryPointStrategy } from "../entry-point";
+import type { ReflectionKind } from "../../models/reflections/kind";
+
+export const EmitStrategy = {
+    true: true, // Alias for both, for backwards compatibility until 0.23
+    false: false, // Alias for docs, for backwards compatibility until 0.23
+    both: "both", // Emit both documentation and JS
+    docs: "docs", // Emit documentation, but not JS (default)
+    none: "none", // Emit nothing, just convert and run validation
+} as const;
+/** @hidden */
+export type EmitStrategy = typeof EmitStrategy[keyof typeof EmitStrategy];
 
 /**
  * An interface describing all TypeDoc specific options. Generated from a
@@ -7,37 +21,46 @@ import { LogLevel } from "../loggers";
  * defining said options.
  */
 export type TypeDocOptions = {
-    [K in keyof TypeDocOptionMap]: TypeDocOptionMap[K] extends Record<
-        string,
-        infer U
-    >
-        ? Exclude<U, string> | keyof TypeDocOptionMap[K]
-        : TypeDocOptionMap[K];
+    [K in keyof TypeDocOptionMap]: unknown extends TypeDocOptionMap[K]
+        ? unknown
+        : TypeDocOptionMap[K] extends string | string[] | number | boolean
+        ? TypeDocOptionMap[K]
+        : TypeDocOptionMap[K] extends Record<string, boolean>
+        ? Partial<TypeDocOptionMap[K]> | boolean
+        :
+              | keyof TypeDocOptionMap[K]
+              | TypeDocOptionMap[K][keyof TypeDocOptionMap[K]];
 };
 
 /**
  * Describes all TypeDoc specific options as returned by {@link Options.getValue}, this is
  * slightly more restrictive than the {@link TypeDocOptions} since it does not allow both
- * keys and values for mapped option types.
+ * keys and values for mapped option types, and does nto allow partials of flag values.
  */
 export type TypeDocOptionValues = {
-    [K in keyof TypeDocOptionMap]: TypeDocOptionMap[K] extends Record<
-        string,
-        infer U
-    >
-        ? Exclude<U, string>
-        : TypeDocOptionMap[K];
+    [K in keyof TypeDocOptionMap]: unknown extends TypeDocOptionMap[K]
+        ? unknown
+        : TypeDocOptionMap[K] extends
+              | string
+              | string[]
+              | number
+              | boolean
+              | Record<string, boolean>
+        ? TypeDocOptionMap[K]
+        : TypeDocOptionMap[K][keyof TypeDocOptionMap[K]];
 };
 
 /**
  * Describes all TypeDoc options. Used internally to provide better types when fetching options.
- * External consumers should likely use [[TypeDocOptions]] instead.
+ * External consumers should likely use {@link TypeDocOptions} instead.
  */
 export interface TypeDocOptionMap {
     options: string;
     tsconfig: string;
 
     entryPoints: string[];
+    entryPointStrategy: typeof EntryPointStrategy;
+
     exclude: string[];
     externalPattern: string[];
     excludeExternals: boolean;
@@ -50,7 +73,7 @@ export interface TypeDocOptionMap {
     includes: string;
     media: string;
 
-    emit: boolean;
+    emit: typeof EmitStrategy;
     watch: boolean;
     preserveWatchOutput: boolean;
 
@@ -59,6 +82,10 @@ export interface TypeDocOptionMap {
     pretty: boolean;
 
     theme: string;
+    lightHighlightTheme: ShikiTheme;
+    darkHighlightTheme: ShikiTheme;
+    customCss: string;
+
     name: string;
     includeVersion: boolean;
     excludeTags: string[];
@@ -66,17 +93,22 @@ export interface TypeDocOptionMap {
     defaultCategory: string;
     categoryOrder: string[];
     categorizeByGroup: boolean;
+    cname: string;
+    sort: SortStrategy[];
     gitRevision: string;
     gitRemote: string;
     gaID: string;
     gaSite: string;
+    githubPages: boolean;
     hideGenerator: boolean;
-    toc: string[];
     hideGoJSNav: boolean;
+    isGoCloudStorage: boolean;
     indexTitle: string;
     topCopyright: string;
     showInheritedDefault: boolean;
     disableOutputCheck: boolean;
+    hideLegend: boolean;
+    cleanOutputDir: boolean;
 
     help: boolean;
     version: boolean;
@@ -84,31 +116,54 @@ export interface TypeDocOptionMap {
     plugin: string[];
     logger: unknown; // string | Function
     logLevel: typeof LogLevel;
-    listInvalidSymbolLinks: boolean;
     jsDocLinks: boolean;
     markedOptions: unknown;
+    compilerOptions: unknown;
 
-    highlightTheme: ShikiTheme;
+    // Validation
+    treatWarningsAsErrors: boolean;
+    intentionallyNotExported: string[];
+    /** @deprecated use validation.invalidLink */
+    listInvalidSymbolLinks: boolean;
+    validation: ValidationOptions;
+    requiredToBeDocumented: (keyof typeof ReflectionKind)[];
 }
+
+export type ValidationOptions = {
+    /**
+     * If set, TypeDoc will produce warnings when a symbol is referenced by the documentation,
+     * but is not included in the documentation.
+     */
+    notExported: boolean;
+    /**
+     * If set, TypeDoc will produce warnings about \{&amp;link\} tags which will produce broken links.
+     */
+    invalidLink: boolean;
+    /**
+     * If set, TypeDoc will produce warnings about declarations that do not have doc comments
+     */
+    notDocumented: boolean;
+};
 
 /**
  * Converts a given TypeDoc option key to the type of the declaration expected.
  */
-export type KeyToDeclaration<
-    K extends keyof TypeDocOptionMap
-> = TypeDocOptionMap[K] extends boolean
-    ? BooleanDeclarationOption
-    : TypeDocOptionMap[K] extends string
-    ? StringDeclarationOption
-    : TypeDocOptionMap[K] extends number
-    ? NumberDeclarationOption
-    : TypeDocOptionMap[K] extends string[]
-    ? ArrayDeclarationOption
-    : unknown extends TypeDocOptionMap[K]
-    ? MixedDeclarationOption
-    : TypeDocOptionMap[K] extends Record<string | number, infer U>
-    ? MapDeclarationOption<U>
-    : never;
+export type KeyToDeclaration<K extends keyof TypeDocOptionMap> =
+    TypeDocOptionMap[K] extends boolean
+        ? BooleanDeclarationOption
+        : TypeDocOptionMap[K] extends string
+        ? StringDeclarationOption
+        : TypeDocOptionMap[K] extends number
+        ? NumberDeclarationOption
+        : TypeDocOptionMap[K] extends string[]
+        ? ArrayDeclarationOption
+        : unknown extends TypeDocOptionMap[K]
+        ? MixedDeclarationOption
+        : TypeDocOptionMap[K] extends Record<string, boolean>
+        ? FlagsDeclarationOption<TypeDocOptionMap[K]>
+        : TypeDocOptionMap[K] extends Record<string | number, infer U>
+        ? MapDeclarationOption<U>
+        : never;
 
 export enum ParameterHint {
     File,
@@ -117,11 +172,31 @@ export enum ParameterHint {
 
 export enum ParameterType {
     String,
+    /**
+     * Resolved according to the config directory.
+     */
+    Path,
     Number,
     Boolean,
     Map,
     Mixed,
     Array,
+    /**
+     * Resolved according to the config directory.
+     */
+    PathArray,
+    /**
+     * Resolved according to the config directory if it starts with `.`
+     */
+    ModuleArray,
+    /**
+     * Resolved according to the config directory unless it starts with `**`, after skipping any leading `!` and `#` characters.
+     */
+    GlobArray,
+    /**
+     * An object with true/false flags
+     */
+    Flags,
 }
 
 export interface DeclarationOptionBase {
@@ -143,10 +218,14 @@ export interface DeclarationOptionBase {
 }
 
 export interface StringDeclarationOption extends DeclarationOptionBase {
-    type?: ParameterType.String;
+    /**
+     * Specifies the resolution strategy. If `Path` is provided, values will be resolved according to their
+     * location in a file. If `String` or no value is provided, values will not be resolved.
+     */
+    type?: ParameterType.String | ParameterType.Path;
 
     /**
-     * If not specified defaults to the empty string.
+     * If not specified defaults to the empty string for both `String` and `Path`.
      */
     defaultValue?: string;
 
@@ -197,7 +276,11 @@ export interface BooleanDeclarationOption extends DeclarationOptionBase {
 }
 
 export interface ArrayDeclarationOption extends DeclarationOptionBase {
-    type: ParameterType.Array;
+    type:
+        | ParameterType.Array
+        | ParameterType.PathArray
+        | ParameterType.ModuleArray
+        | ParameterType.GlobArray;
 
     /**
      * If not specified defaults to an empty array.
@@ -248,29 +331,185 @@ export interface MapDeclarationOption<T> extends DeclarationOptionBase {
     mapError?: string;
 }
 
+export interface FlagsDeclarationOption<T extends Record<string, boolean>>
+    extends DeclarationOptionBase {
+    type: ParameterType.Flags;
+
+    /**
+     * All of the possible flags, with their default values set.
+     */
+    defaults: T;
+}
+
 export type DeclarationOption =
     | StringDeclarationOption
     | NumberDeclarationOption
     | BooleanDeclarationOption
     | MixedDeclarationOption
     | MapDeclarationOption<unknown>
-    | ArrayDeclarationOption;
+    | ArrayDeclarationOption
+    | FlagsDeclarationOption<Record<string, boolean>>;
 
-export type DeclarationOptionToOptionType<
-    T extends DeclarationOption
-> = T extends StringDeclarationOption
-    ? string
-    : T extends NumberDeclarationOption
-    ? number
-    : T extends BooleanDeclarationOption
-    ? boolean
-    : T extends MixedDeclarationOption
-    ? unknown
-    : T extends MapDeclarationOption<infer U>
-    ? U
-    : T extends ArrayDeclarationOption
-    ? string[]
-    : never;
+export interface ParameterTypeToOptionTypeMap {
+    [ParameterType.String]: string;
+    [ParameterType.Path]: string;
+    [ParameterType.Number]: number;
+    [ParameterType.Boolean]: boolean;
+    [ParameterType.Mixed]: unknown;
+    [ParameterType.Array]: string[];
+    [ParameterType.PathArray]: string[];
+    [ParameterType.ModuleArray]: string[];
+    [ParameterType.GlobArray]: string[];
+    [ParameterType.Flags]: Record<string, boolean>;
+
+    // Special.. avoid this if possible.
+    [ParameterType.Map]: unknown;
+}
+
+export type DeclarationOptionToOptionType<T extends DeclarationOption> =
+    T extends MapDeclarationOption<infer U>
+        ? U
+        : T extends FlagsDeclarationOption<infer U>
+        ? U
+        : ParameterTypeToOptionTypeMap[Exclude<T["type"], undefined>];
+
+const converters: {
+    [K in ParameterType]: (
+        value: unknown,
+        option: DeclarationOption & { type: K },
+        configPath: string
+    ) => ParameterTypeToOptionTypeMap[K];
+} = {
+    [ParameterType.String](value, option) {
+        const stringValue = value == null ? "" : String(value);
+        option.validate?.(stringValue);
+        return stringValue;
+    },
+    [ParameterType.Path](value, option, configPath) {
+        const stringValue =
+            value == null ? "" : resolve(configPath, String(value));
+        option.validate?.(stringValue);
+        return stringValue;
+    },
+    [ParameterType.Number](value, option) {
+        const numValue = parseInt(String(value), 10) || 0;
+        if (!valueIsWithinBounds(numValue, option.minValue, option.maxValue)) {
+            throw new Error(
+                getBoundsError(option.name, option.minValue, option.maxValue)
+            );
+        }
+        option.validate?.(numValue);
+        return numValue;
+    },
+    [ParameterType.Boolean](value) {
+        return !!value;
+    },
+    [ParameterType.Array](value, option) {
+        let strArrValue = new Array<string>();
+        if (Array.isArray(value)) {
+            strArrValue = value.map(String);
+        } else if (typeof value === "string") {
+            strArrValue = [value];
+        }
+        option.validate?.(strArrValue);
+        return strArrValue;
+    },
+    [ParameterType.PathArray](value, option, configPath) {
+        let strArrValue = new Array<string>();
+        if (Array.isArray(value)) {
+            strArrValue = value.map(String);
+        } else if (typeof value === "string") {
+            strArrValue = [value];
+        }
+        strArrValue = strArrValue.map((path) => resolve(configPath, path));
+        option.validate?.(strArrValue);
+        return strArrValue;
+    },
+    [ParameterType.ModuleArray](value, option, configPath) {
+        let strArrValue = new Array<string>();
+        if (Array.isArray(value)) {
+            strArrValue = value.map(String);
+        } else if (typeof value === "string") {
+            strArrValue = [value];
+        }
+        strArrValue = resolveModulePaths(strArrValue, configPath);
+        option.validate?.(strArrValue);
+        return strArrValue;
+    },
+    [ParameterType.GlobArray](value, option, configPath) {
+        let strArrValue = new Array<string>();
+        if (Array.isArray(value)) {
+            strArrValue = value.map(String);
+        } else if (typeof value === "string") {
+            strArrValue = [value];
+        }
+        strArrValue = resolveGlobPaths(strArrValue, configPath);
+        option.validate?.(strArrValue);
+        return strArrValue;
+    },
+    [ParameterType.Map](value, option) {
+        const key = String(value);
+        if (option.map instanceof Map) {
+            if (option.map.has(key)) {
+                return option.map.get(key);
+            } else if ([...option.map.values()].includes(value)) {
+                return value;
+            }
+        } else if (key in option.map) {
+            if (isTsNumericEnum(option.map) && typeof value === "number") {
+                return value;
+            }
+            return option.map[key];
+        } else if (Object.values(option.map).includes(value)) {
+            return value;
+        }
+        throw new Error(
+            option.mapError ?? getMapError(option.map, option.name)
+        );
+    },
+    [ParameterType.Mixed](value, option) {
+        option.validate?.(value);
+        return value;
+    },
+    [ParameterType.Flags](value, option) {
+        if (typeof value === "boolean") {
+            value = Object.fromEntries(
+                Object.keys(option.defaults).map((key) => [key, value])
+            );
+        }
+
+        if (typeof value !== "object" || value == null) {
+            throw new Error(
+                `Expected an object with flag values for ${option.name} or true/false`
+            );
+        }
+        const obj = { ...value } as Record<string, unknown>;
+
+        for (const key of Object.keys(obj)) {
+            if (!Object.prototype.hasOwnProperty.call(option.defaults, key)) {
+                throw new Error(
+                    `The flag '${key}' is not valid for ${
+                        option.name
+                    }, expected one of: ${Object.keys(option.defaults).join(
+                        ", "
+                    )}`
+                );
+            }
+
+            if (typeof obj[key] !== "boolean") {
+                // Explicit null/undefined, switch to default.
+                if (obj[key] == null) {
+                    obj[key] = option.defaults[key];
+                } else {
+                    throw new Error(
+                        `Flag values for ${option.name} must be a boolean.`
+                    );
+                }
+            }
+        }
+        return obj as Record<string, boolean>;
+    },
+};
 
 /**
  * The default conversion function used by the Options container. Readers may
@@ -280,78 +519,106 @@ export type DeclarationOptionToOptionType<
  * @param option The option for which the value should be converted.
  * @returns The result of the conversion. Might be the value or an error.
  */
-export function convert<T extends DeclarationOption>(
+export function convert(
     value: unknown,
-    option: T
-): DeclarationOptionToOptionType<T>;
-export function convert<T>(value: unknown, option: MapDeclarationOption<T>): T;
-export function convert(value: unknown, option: DeclarationOption): unknown {
-    switch (option.type) {
-        case undefined:
-        case ParameterType.String: {
-            const stringValue = value == null ? "" : String(value);
-            if (option.validate) {
-                option.validate(stringValue);
-            }
-            return stringValue;
-        }
-        case ParameterType.Number: {
-            const numValue = parseInt(String(value), 10) || 0;
-            if (
-                !valueIsWithinBounds(numValue, option.minValue, option.maxValue)
-            ) {
-                throw new Error(
-                    getBoundsError(
-                        option.name,
-                        option.minValue,
-                        option.maxValue
-                    )
-                );
-            }
-            if (option.validate) {
-                option.validate(numValue);
-            }
-            return numValue;
-        }
+    option: DeclarationOption,
+    configPath: string
+): unknown {
+    const _converters = converters as Record<
+        ParameterType,
+        (v: unknown, o: DeclarationOption, c: string) => unknown
+    >;
+    return _converters[option.type ?? ParameterType.String](
+        value,
+        option,
+        configPath
+    );
+}
 
-        case ParameterType.Boolean:
-            return Boolean(value);
+const defaultGetters: {
+    [K in ParameterType]: (
+        option: DeclarationOption & { type: K }
+    ) => ParameterTypeToOptionTypeMap[K];
+} = {
+    [ParameterType.String](option) {
+        return option.defaultValue ?? "";
+    },
+    [ParameterType.Path](option) {
+        const defaultStr = option.defaultValue ?? "";
+        if (defaultStr == "") {
+            return "";
+        }
+        return isAbsolute(defaultStr)
+            ? defaultStr
+            : join(process.cwd(), defaultStr);
+    },
+    [ParameterType.Number](option) {
+        return option.defaultValue ?? 0;
+    },
+    [ParameterType.Boolean](option) {
+        return option.defaultValue ?? false;
+    },
+    [ParameterType.Map](option) {
+        return option.defaultValue;
+    },
+    [ParameterType.Mixed](option) {
+        return option.defaultValue;
+    },
+    [ParameterType.Array](option) {
+        return option.defaultValue ?? [];
+    },
+    [ParameterType.PathArray](option) {
+        return (
+            option.defaultValue?.map((value) =>
+                resolve(process.cwd(), value)
+            ) ?? []
+        );
+    },
+    [ParameterType.ModuleArray](option) {
+        return (
+            option.defaultValue?.map((value) =>
+                value.startsWith(".") ? resolve(process.cwd(), value) : value
+            ) ?? []
+        );
+    },
+    [ParameterType.GlobArray](option) {
+        return resolveGlobPaths(option.defaultValue ?? [], process.cwd());
+    },
+    [ParameterType.Flags](option) {
+        return { ...option.defaults };
+    },
+};
 
-        case ParameterType.Array: {
-            let strArrValue = new Array<string>();
-            if (Array.isArray(value)) {
-                strArrValue = value.map(String);
-            } else if (typeof value === "string") {
-                strArrValue = value.split(",");
-            }
-            if (option.validate) {
-                option.validate(strArrValue);
-            }
-            return strArrValue;
+export function getDefaultValue(option: DeclarationOption) {
+    const getters = defaultGetters as Record<
+        ParameterType,
+        (o: DeclarationOption) => unknown
+    >;
+    return getters[option.type ?? ParameterType.String](option);
+}
+
+function resolveGlobPaths(globs: readonly string[], configPath: string) {
+    return globs.map((path) => {
+        const start = path.match(/^[!#]+/)?.[0] ?? "";
+        const remaining = path.substr(start.length);
+        if (!remaining.startsWith("**")) {
+            return start + resolve(configPath, remaining);
         }
-        case ParameterType.Map: {
-            const key = String(value).toLowerCase();
-            if (option.map instanceof Map) {
-                if (option.map.has(key)) {
-                    return option.map.get(key);
-                } else if ([...option.map.values()].includes(value)) {
-                    return value;
-                }
-            } else if (key in option.map) {
-                return option.map[key];
-            } else if (Object.values(option.map).includes(value)) {
-                return value;
-            }
-            throw new Error(
-                option.mapError ?? getMapError(option.map, option.name)
-            );
+        return start + remaining;
+    });
+}
+
+function resolveModulePaths(modules: readonly string[], configPath: string) {
+    return modules.map((path) => {
+        if (path.startsWith(".")) {
+            return resolve(configPath, path);
         }
-        case ParameterType.Mixed:
-            if (option.validate) {
-                option.validate(value);
-            }
-            return value;
-    }
+        return path;
+    });
+}
+
+function isTsNumericEnum(map: Record<string, any>) {
+    return Object.values(map).every((key) => map[map[key]] === key);
 }
 
 /**
@@ -365,15 +632,10 @@ function getMapError(
     name: string
 ): string {
     let keys = map instanceof Map ? [...map.keys()] : Object.keys(map);
-    const getString = (key: string) =>
-        String(map instanceof Map ? map.get(key) : map[key]);
 
     // If the map is a TS numeric enum we need to filter out the numeric keys.
     // TS numeric enums have the property that every key maps to a value, which maps back to that key.
-    if (
-        !(map instanceof Map) &&
-        keys.every((key) => getString(getString(key)) === key)
-    ) {
+    if (!(map instanceof Map) && isTsNumericEnum(map)) {
         // This works because TS enum keys may not be numeric.
         keys = keys.filter((key) => Number.isNaN(parseInt(key, 10)));
     }
@@ -397,10 +659,9 @@ function getBoundsError(
         return `${name} must be between ${minValue} and ${maxValue}`;
     } else if (isFiniteNumber(minValue)) {
         return `${name} must be >= ${minValue}`;
-    } else if (isFiniteNumber(maxValue)) {
+    } else {
         return `${name} must be <= ${maxValue}`;
     }
-    throw new Error("Unreachable");
 }
 
 /**

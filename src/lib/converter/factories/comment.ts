@@ -1,22 +1,7 @@
 import * as ts from "typescript";
-import { toArray } from "lodash";
 
 import { Comment, CommentTag } from "../../models/comments/index";
-
-/**
- * Return the parsed comment of the given TypeScript node.
- *
- * @param node  The node whose comment should be returned.
- * @return The parsed comment as a [[Comment]] instance or undefined if no comment is present.
- */
-export function createComment(node: ts.Node): Comment | undefined {
-    const comment = getRawComment(node);
-    if (!comment) {
-        return;
-    }
-
-    return parseComment(comment);
-}
+import type { Logger } from "../../utils";
 
 /**
  * Check whether the given module declaration is the topmost.
@@ -50,7 +35,7 @@ function getRootModuleDeclaration(node: ts.ModuleDeclaration): ts.Node {
         node.parent &&
         node.parent.kind === ts.SyntaxKind.ModuleDeclaration
     ) {
-        const parent = <ts.ModuleDeclaration>node.parent;
+        const parent = node.parent;
         if (node.name.pos === parent.name.end + 1) {
             node = parent;
         } else {
@@ -75,10 +60,10 @@ function getJSDocCommentRanges(node: ts.Node, text: string): ts.CommentRange[] {
         ts.SyntaxKind.ParenthesizedExpression,
     ].includes(node.kind);
 
-    let commentRanges = toArray(ts.getLeadingCommentRanges(text, node.pos));
+    let commentRanges = ts.getLeadingCommentRanges(text, node.pos) ?? [];
     if (hasTrailingCommentRanges) {
-        commentRanges = toArray(
-            ts.getTrailingCommentRanges(text, node.pos)
+        commentRanges = (
+            ts.getTrailingCommentRanges(text, node.pos) ?? []
         ).concat(commentRanges);
     }
 
@@ -88,13 +73,24 @@ function getJSDocCommentRanges(node: ts.Node, text: string): ts.CommentRange[] {
     );
 }
 
+export function getJsDocCommentText(comment: ts.JSDocTag["comment"]) {
+    if (typeof comment === "string") {
+        return comment;
+    }
+
+    return comment?.map((val) => val.text).join("");
+}
+
 /**
  * Return the raw comment string for the given node.
  *
  * @param node  The node whose comment should be resolved.
  * @returns     The raw comment string or undefined if no comment could be found.
  */
-export function getRawComment(node: ts.Node): string | undefined {
+export function getRawComment(
+    node: ts.Node,
+    logger: Logger
+): string | undefined {
     // This happens if we are converting a JS project that has @typedef "interfaces"
     // with an @property tag, a @typedef type alias, a callback with parameters, etc.
     if (
@@ -105,7 +101,7 @@ export function getRawComment(node: ts.Node): string | undefined {
     ) {
         // Also strip off leading dashes:
         // @property {string} name - docs
-        return node.comment?.replace(/^\s*-\s*/, "");
+        return getJsDocCommentText(node.comment)?.replace(/^\s*-\s*/, "");
     }
 
     if (
@@ -123,58 +119,54 @@ export function getRawComment(node: ts.Node): string | undefined {
         node = node.parent;
     } else if (node.kind === ts.SyntaxKind.ExportSpecifier) {
         node = node.parent.parent;
+    } else if (node.kind === ts.SyntaxKind.FunctionType) {
+        node = node.parent;
     }
 
     const sourceFile = node.getSourceFile();
     const comments = getJSDocCommentRanges(node, sourceFile.text);
     if (comments.length) {
         let comment: ts.CommentRange;
-        let explicitPackageComment = comments.find((comment) =>
-            sourceFile.text
-                .substring(comment.pos, comment.end)
-                .includes("@module")
-        );
 
-        // TODO: Deprecate and remove. This is an abuse of the @packageDocumentation tag. See:
-        // https://github.com/TypeStrong/typedoc/issues/1504#issuecomment-775842609
-        // Deprecate in 0.21, remove in 0.22
-        explicitPackageComment ??= comments.find((comment) =>
-            sourceFile.text
-                .substring(comment.pos, comment.end)
-                .includes("@packageDocumentation")
-        );
         if (node.kind === ts.SyntaxKind.SourceFile) {
+            const explicitPackageComment =
+                comments.find((comment) =>
+                    sourceFile.text
+                        .substring(comment.pos, comment.end)
+                        .includes("@module")
+                ) ??
+                comments.find((comment) =>
+                    sourceFile.text
+                        .substring(comment.pos, comment.end)
+                        .includes("@packageDocumentation")
+                );
+
             if (explicitPackageComment) {
                 comment = explicitPackageComment;
             } else if (comments.length > 1) {
                 // Legacy behavior, require more than one comment and use the first comment.
-                // FUTURE: GH#1083, follow deprecation process to phase this out.
                 comment = comments[0];
+
+                logger.deprecated(
+                    `Specifying multiple comments at the start of a file to use the first comment as the comment for the module has been deprecated. Use @module or @packageDocumentation instead.\n\t${sourceFile.fileName}`,
+                    false
+                );
             } else {
                 // Single comment that may be a license comment, or no comments, bail.
                 return;
             }
         } else {
             comment = comments[comments.length - 1];
-            // If a non-SourceFile node comment has this tag, it should not be attached to the node
-            // as it documents the whole file by convention.
-            // TODO: Deprecate and remove. This is an abuse of the @packageDocumentation tag. See:
-            // https://github.com/TypeStrong/typedoc/issues/1504#issuecomment-775842609
-            // Deprecate in 0.21, remove in 0.22
-            if (
-                sourceFile.text
-                    .substring(comment.pos, comment.end)
-                    .includes("@packageDocumentation")
-            ) {
-                return;
-            }
 
             // If a non-SourceFile node comment has this tag, it should not be attached to the node
             // as it documents the module.
             if (
                 sourceFile.text
                     .substring(comment.pos, comment.end)
-                    .includes("@module")
+                    .includes("@module") ||
+                sourceFile.text
+                    .substring(comment.pos, comment.end)
+                    .includes("@packageDocumentation")
             ) {
                 return;
             }
@@ -231,6 +223,9 @@ export function parseComment(
 
         if (tagName === "return") {
             tagName = "returns";
+        }
+        if (tagName === "example") {
+            line = line.replace(/<\/?caption>/g, "");
         }
         if (
             tagName === "param" ||

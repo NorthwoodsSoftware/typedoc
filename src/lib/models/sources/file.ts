@@ -1,13 +1,14 @@
 import * as Path from "path";
 
-import { Reflection } from "../reflections/abstract";
-import { ReflectionGroup } from "../ReflectionGroup";
-import { SourceDirectory } from "./directory";
+import type { ReflectionGroup } from "../ReflectionGroup";
+import type { SourceDirectory } from "./directory";
+import type { RepositoryType } from "./repository";
+import type { DeclarationReflection } from "..";
 
 /**
  * Represents references of reflections to their defining source files.
  *
- * @see [[DeclarationReflection.sources]]
+ * @see {@link DeclarationReflection.sources}
  */
 export interface SourceReference {
     /**
@@ -36,12 +37,12 @@ export interface SourceReference {
 /**
  * Exposes information about a source file.
  *
- * One my access a list of all source files through the [[ProjectReflection.files]] property or as
- * a tree structure through the [[ProjectReflection.directory]] property.
+ * One may access a list of all source files through the {@link ProjectReflection.files} property or as
+ * a tree structure through the {@link ProjectReflection.directory} property.
  *
  * Furthermore each reflection carries references to the related SourceFile with their
- * [[DeclarationReflection.sources]] property. It is an array of of [[IDeclarationSource]] instances
- * containing the reference in their [[IDeclarationSource.file]] field.
+ * {@link DeclarationReflection.sources} property. It is an array of of {@link SourceReference} instances
+ * containing the reference in their {@link SourceReference.file} field.
  */
 export class SourceFile {
     /**
@@ -61,9 +62,14 @@ export class SourceFile {
     name: string;
 
     /**
-     * A url pointing to a page displaying the contents of this file.
+     * A URL pointing to a page displaying the contents of this file.
      */
     url?: string;
+
+    /**
+     * The type of repository where this file is hosted.
+     */
+    repositoryType?: RepositoryType;
 
     /**
      * The representation of the parent directory of this source file.
@@ -73,7 +79,7 @@ export class SourceFile {
     /**
      * A list of all reflections that are declared in this file.
      */
-    reflections: Reflection[] = [];
+    reflections: DeclarationReflection[] = [];
 
     /**
      * A grouped list of the reflections declared in this file.

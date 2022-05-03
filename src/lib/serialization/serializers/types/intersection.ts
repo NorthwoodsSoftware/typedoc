@@ -1,7 +1,7 @@
 import { IntersectionType } from "../../../models";
 
 import { TypeSerializerComponent } from "../../components";
-import { IntersectionType as JSONIntersectionType } from "../../schema";
+import type { IntersectionType as JSONIntersectionType } from "../../schema";
 
 export class IntersectionTypeSerializer extends TypeSerializerComponent<IntersectionType> {
     supports(t: unknown) {
@@ -9,7 +9,7 @@ export class IntersectionTypeSerializer extends TypeSerializerComponent<Intersec
     }
 
     /**
-     * Will be run after [[TypeSerializer]] so `type` will already be set.
+     * Will be run after {@link TypeSerializer} so `type` will already be set.
      * @param type
      * @param obj
      */

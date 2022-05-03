@@ -1,22 +1,15 @@
-import { toArray } from "lodash";
 import type * as ts from "typescript";
-import { ReferenceType, ReflectionType, Type } from "../types/index";
-import {
-    DefaultValueContainer,
-    Reflection,
-    TraverseCallback,
-    TraverseProperty,
-    TypeContainer,
-    TypeParameterContainer,
-} from "./abstract";
+import type { SomeType } from "..";
+import { ReferenceType, ReflectionType, Type } from "../types";
+import { TraverseCallback, TraverseProperty, Reflection } from "./abstract";
 import { ContainerReflection } from "./container";
-import { SignatureReflection } from "./signature";
-import { TypeParameterReflection } from "./type-parameter";
+import type { SignatureReflection } from "./signature";
+import type { TypeParameterReflection } from "./type-parameter";
 
 /**
  * Stores hierarchical type data.
  *
- * @see [[DeclarationReflection.typeHierarchy]]
+ * @see {@link DeclarationReflection.typeHierarchy}
  */
 export interface DeclarationHierarchy {
     /**
@@ -41,9 +34,7 @@ export interface DeclarationHierarchy {
  * All parts of a project are represented by DeclarationReflection instances. The actual
  * kind of a reflection is stored in its ´kind´ member.
  */
-export class DeclarationReflection
-    extends ContainerReflection
-    implements DefaultValueContainer, TypeContainer, TypeParameterContainer {
+export class DeclarationReflection extends ContainerReflection {
     /**
      * The escaped name of this declaration assigned by the TS compiler if there is an associated symbol.
      * This is used to retrieve properties for analyzing inherited members.
@@ -57,14 +48,14 @@ export class DeclarationReflection
      * If the reflection represents a variable or a property, this is the value type.<br />
      * If the reflection represents a signature, this is the return type.
      */
-    type?: Type;
+    type?: SomeType;
 
     typeParameters?: TypeParameterReflection[];
 
     /**
      * A list of call signatures attached to this declaration.
      *
-     * TypeDoc creates one declaration per function that may contain ore or more
+     * TypeDoc creates one declaration per function that may contain one or more
      * signature reflections.
      */
     signatures?: SignatureReflection[];
@@ -138,7 +129,7 @@ export class DeclarationReflection
      */
     typeHierarchy?: DeclarationHierarchy;
 
-    hasGetterOrSetter(): boolean {
+    override hasGetterOrSetter(): boolean {
         return !!this.getSignature || !!this.setSignature;
     }
 
@@ -161,15 +152,24 @@ export class DeclarationReflection
         return result;
     }
 
+    /** @internal */
+    getNonIndexSignatures(): SignatureReflection[] {
+        return ([] as SignatureReflection[]).concat(
+            this.signatures ?? [],
+            this.setSignature ?? [],
+            this.getSignature ?? []
+        );
+    }
+
     /**
      * @param name  The name to look for. Might contain a hierarchy.
      */
-     findReflectionByName(name: string, searchUp?: boolean): Reflection;
+     override findReflectionByName(name: string, searchUp?: boolean): Reflection;
 
      /**
       * @param names  The name hierarchy to look for.
       */
-     findReflectionByName(names: string[], searchUp?: boolean): Reflection;
+     override findReflectionByName(names: string[], searchUp?: boolean): Reflection;
  
      /**
       * Try to find a reflection by its name.
@@ -177,7 +177,7 @@ export class DeclarationReflection
       *
       * @return The found reflection or null.
       */
-     findReflectionByName(arg: any, searchUp?: boolean): Reflection | undefined {
+     override findReflectionByName(arg: any, searchUp?: boolean): Reflection | undefined {
          const names: string[] = Array.isArray(arg) ? arg : arg.split('.');
  
          function walkTypeParents(child: DeclarationReflection) {
@@ -217,8 +217,8 @@ export class DeclarationReflection
      *
      * @param callback  The callback function that should be applied for each child reflection.
      */
-    traverse(callback: TraverseCallback) {
-        for (const parameter of toArray(this.typeParameters)) {
+    override traverse(callback: TraverseCallback) {
+        for (const parameter of this.typeParameters?.slice() || []) {
             if (callback(parameter, TraverseProperty.TypeParameter) === false) {
                 return;
             }
@@ -235,7 +235,7 @@ export class DeclarationReflection
             }
         }
 
-        for (const signature of toArray(this.signatures)) {
+        for (const signature of this.signatures?.slice() || []) {
             if (callback(signature, TraverseProperty.Signatures) === false) {
                 return;
             }
@@ -276,7 +276,7 @@ export class DeclarationReflection
     /**
      * Return a string representation of this reflection.
      */
-    toString(): string {
+    override toString(): string {
         let result = super.toString();
 
         if (this.typeParameters) {

@@ -4,7 +4,7 @@
  * ## Plugins
  * Plugins which modify the serialization process can use declaration merging
  * to add custom properties to the exported interfaces.
- * For example, if your custom serializer adds a property to all [[Reflection]] objects:
+ * For example, if your custom serializer adds a property to all {@link Reflection} objects:
  * ```ts
  * declare module 'typedoc/dist/lib/serialization/schema' {
  *     export interface AbstractReflection {
@@ -13,9 +13,9 @@
  * }
  * ```
  *
- * If a plugin defines a new Model type, [[ModelToObject]] will not pick up the serializer type and
+ * If a plugin defines a new Model type, {@link ModelToObject} will not pick up the serializer type and
  * the resulting type will not be included in the return type of {@link Serializer.toObject}.
- * To fix this, use declaration merging to augment the [[Serializer]] class.
+ * To fix this, use declaration merging to augment the {@link Serializer} class.
  * ```ts
  * declare module 'typedoc/dist/lib/serialization/serializer' {
  *     export interface Serializer {
@@ -25,11 +25,11 @@
  * ```
  *
  * For documentation on the JSON output properties, view the corresponding model.
+ * @module
  */
 
-/** */
-import * as M from "../models";
-import { SourceReferenceWrapper, DecoratorWrapper } from "./serializers";
+import type * as M from "../models";
+import type { SourceReferenceWrapper, DecoratorWrapper } from "./serializers";
 
 /**
  * Describes the mapping from Model types to the corresponding JSON output type.
@@ -64,40 +64,10 @@ type _ModelToObject<T> =
         : T extends M.Reflection
         ? Reflection
         : // Types
-        T extends M.ArrayType
-        ? ArrayType
-        : T extends M.ConditionalType
-        ? ConditionalType
-        : T extends M.IndexedAccessType
-        ? IndexedAccessType
-        : T extends M.InferredType
-        ? InferredType
-        : T extends M.IntersectionType
-        ? IntersectionType
-        : T extends M.IntrinsicType
-        ? IntrinsicType
-        : T extends M.OptionalType
-        ? OptionalType
-        : T extends M.PredicateType
-        ? PredicateType
-        : T extends M.QueryType
-        ? QueryType
-        : T extends M.ReferenceType
-        ? ReferenceType
-        : T extends M.ReflectionType
-        ? ReflectionType
-        : T extends M.RestType
-        ? RestType
-        : T extends M.LiteralType
-        ? LiteralType
-        : T extends M.TupleType
-        ? TupleType
-        : T extends M.UnknownType
-        ? UnknownType
-        : T extends M.TemplateLiteralType
-        ? TemplateLiteralType
+        T extends M.SomeType
+        ? TypeKindMap[T["type"]]
         : T extends M.Type
-        ? SomeType // Technically AbstractType, but the union is more useful
+        ? SomeType
         : // Miscellaneous
         T extends M.Comment
         ? Comment
@@ -235,9 +205,31 @@ export type SomeType =
     | RestType
     | TupleType
     | TypeOperatorType
-    | TypeParameterType
     | UnionType
     | UnknownType;
+
+export type TypeKindMap = {
+    array: ArrayType;
+    conditional: ConditionalType;
+    indexedAccess: IndexedAccessType;
+    inferred: InferredType;
+    intersection: IntersectionType;
+    intrinsic: IntrinsicType;
+    literal: LiteralType;
+    mapped: MappedType;
+    optional: OptionalType;
+    predicate: PredicateType;
+    query: QueryType;
+    reference: ReferenceType;
+    reflection: ReflectionType;
+    rest: RestType;
+    "template-literal": TemplateLiteralType;
+    tuple: TupleType;
+    "named-tuple-member": NamedTupleMemberType;
+    typeOperator: TypeOperatorType;
+    union: UnionType;
+    unknown: UnknownType;
+};
 
 export interface ArrayType
     extends Type,
@@ -278,7 +270,10 @@ export interface QueryType extends Type, S<M.QueryType, "type" | "queryType"> {}
 
 export interface ReferenceType
     extends Type,
-        S<M.ReferenceType, "type" | "name" | "typeArguments"> {
+        S<
+            M.ReferenceType,
+            "type" | "name" | "typeArguments" | "qualifiedName" | "package"
+        > {
     id?: number;
 }
 
@@ -305,8 +300,9 @@ export interface NamedTupleMemberType
 export interface TemplateLiteralType
     extends Type,
         S<M.TemplateLiteralType, "type" | "head"> {
-    tail: [Type, string][];
+    tail: [SomeType, string][];
 }
+
 export interface MappedType
     extends Type,
         S<
@@ -323,10 +319,6 @@ export interface MappedType
 export interface TypeOperatorType
     extends Type,
         S<M.TypeOperatorType, "type" | "operator" | "target"> {}
-
-export interface TypeParameterType
-    extends Type,
-        S<M.TypeParameterType, "type" | "name" | "constraint" | "default"> {}
 
 export interface UnionType extends Type, S<M.UnionType, "type" | "types"> {}
 

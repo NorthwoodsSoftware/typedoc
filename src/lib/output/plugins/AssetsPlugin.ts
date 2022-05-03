@@ -1,8 +1,11 @@
-import * as Path from "path";
-import * as FS from "fs-extra";
-
 import { Component, RendererComponent } from "../components";
 import { RendererEvent } from "../events";
+import { copySync, writeFileSync } from "../../utils/fs";
+import { DefaultTheme } from "../themes/default/DefaultTheme";
+import { getStyles } from "../../utils/highlighter";
+import { BindOption } from "../../utils";
+import { existsSync } from "fs";
+import { join } from "path";
 
 /**
  * A plugin that copies the subdirectory ´assets´ from the current themes
@@ -10,17 +13,30 @@ import { RendererEvent } from "../events";
  */
 @Component({ name: "assets" })
 export class AssetsPlugin extends RendererComponent {
-    /**
-     * Should the default assets always be copied to the output directory?
-     */
-    copyDefaultAssets = false;
+    /** @internal */
+    @BindOption("customCss")
+    customCss!: string;
 
     /**
      * Create a new AssetsPlugin instance.
      */
-    initialize() {
+    override initialize() {
         this.listenTo(this.owner, {
-            [RendererEvent.BEGIN]: this.onRendererBegin,
+            [RendererEvent.END]: this.onRenderEnd,
+            [RendererEvent.BEGIN]: (event: RendererEvent) => {
+                const dest = join(event.outputDirectory, "assets");
+
+                if (this.customCss) {
+                    if (existsSync(this.customCss)) {
+                        copySync(this.customCss, join(dest, "custom.css"));
+                    } else {
+                        this.application.logger.error(
+                            `Custom CSS file at ${this.customCss} does not exist.`
+                        );
+                        event.preventDefault();
+                    }
+                }
+            },
         });
     }
 
@@ -29,22 +45,13 @@ export class AssetsPlugin extends RendererComponent {
      *
      * @param event  An event object describing the current render operation.
      */
-    private onRendererBegin(event: RendererEvent) {
-        let fromDefault: string | undefined = Path.join(
-            this.owner.getDefaultTheme(),
-            "assets"
-        );
-        const to = Path.join(event.outputDirectory, "assets");
+    private onRenderEnd(event: RendererEvent) {
+        if (this.owner.theme instanceof DefaultTheme) {
+            const src = join(__dirname, "..", "..", "..", "..", "static");
+            const dest = join(event.outputDirectory, "assets");
+            copySync(src, dest);
 
-        if (this.copyDefaultAssets) {
-            FS.copySync(fromDefault, to);
-        } else {
-            fromDefault = undefined;
-        }
-
-        const from = Path.join(this.owner.theme!.basePath, "assets");
-        if (from !== fromDefault && FS.existsSync(from)) {
-            FS.copySync(from, to);
+            writeFileSync(join(dest, "highlight.css"), getStyles());
         }
     }
 }

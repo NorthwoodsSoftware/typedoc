@@ -1,52 +1,61 @@
-/**
- * This type provides a flag that can be used to turn off more lax overloads intended for
- * plugin use only to catch type errors in the TypeDoc codebase. The prepublishOnly npm
- * script will be used to switch this flag to false when publishing, then immediately back
- * to true after a successful publish.
- */
-type InternalOnly = false;
-
-/**
- * Helper type to convert `T` to `F` if strict mode is on.
- *
- * Can be used in overloads to map a parameter type to `never`. For example, the
- * following function will work with any string argument, but to improve the type safety
- * of internal code, we only ever want to pass 'a' or 'b' to it. Plugins on the other
- * hand need to be able to pass any string to it. Overloads similar to this are used
- * in the {@link Options} class.
- *
- * ```ts
- * function over(flag: 'a' | 'b'): string
- * function over(flag: IfStrict<string, never>): string
- * function over(flag: string): string { return flag }
- * ```
- */
-export type IfInternal<T, F> = InternalOnly extends true ? T : F;
-
-/**
- * Helper type to convert `T` to `never` if strict mode is on.
- *
- * See {@link IfInternal} for the rationale.
- */
-export type NeverIfInternal<T> = IfInternal<never, T>;
-
-export { Options, ParameterType, ParameterHint, BindOption } from "./options";
 export {
-    insertPrioritySorted,
-    removeIfPresent,
-    removeIf,
     filterMap,
+    insertPrioritySorted,
+    partition,
+    removeIf,
+    removeIfPresent,
     unique,
-    uniqueByEquals,
 } from "./array";
-export { Component, AbstractComponent, ChildableComponent } from "./component";
+export { AbstractComponent, ChildableComponent, Component } from "./component";
 export { Event, EventDispatcher } from "./events";
 export {
+    copy,
+    copySync,
+    getCommonDirectory,
     normalizePath,
-    directoryExists,
-    ensureDirectoriesExist,
-    writeFile,
     readFile,
+    remove,
+    writeFile,
+    writeFileSync,
 } from "./fs";
-export { Logger, LogLevel, ConsoleLogger, CallbackLogger } from "./loggers";
-export { PluginHost } from "./plugins";
+export type { IfInternal, NeverIfInternal } from "./general";
+export { CallbackLogger, ConsoleLogger, Logger, LogLevel } from "./loggers";
+export {
+    ArgumentsReader,
+    BindOption,
+    Options,
+    ParameterHint,
+    ParameterType,
+    TSConfigReader,
+    TypeDocReader,
+} from "./options";
+export type {
+    ArrayDeclarationOption,
+    BooleanDeclarationOption,
+    DeclarationOption,
+    DeclarationOptionBase,
+    DeclarationOptionToOptionType,
+    KeyToDeclaration,
+    MapDeclarationOption,
+    MixedDeclarationOption,
+    NumberDeclarationOption,
+    FlagsDeclarationOption,
+    OptionsReader,
+    StringDeclarationOption,
+    TypeDocOptionMap,
+    TypeDocOptions,
+    ValidationOptions,
+    TypeDocOptionValues,
+    ParameterTypeToOptionTypeMap,
+} from "./options";
+export { discoverPlugins, loadPlugins } from "./plugins";
+export { sortReflections } from "./sort";
+export type { SortStrategy } from "./sort";
+
+export { EventHooks } from "./hooks";
+
+export * from "./entry-point";
+
+import * as JSX from "./jsx";
+export { JSX };
+export { Fragment, Raw, renderElement } from "./jsx";

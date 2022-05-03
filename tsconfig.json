@@ -1,8 +1,16 @@
 {
     "compilerOptions": {
         "module": "CommonJS",
-        "lib": ["ES2018"],
-        "target": "ES2018",
+        "lib": ["es2019", "es2020.promise", "es2020.bigint", "es2020.string"],
+        "target": "es2019",
+
+        // Add our `ts` internal types
+        "typeRoots": ["node_modules/@types", "src/lib/types"],
+        "types": ["node", "glob", "lunr", "marked", "minimatch", "mocha"],
+
+        // Speed up dev compilation time
+        "incremental": true,
+        "tsBuildInfoFile": "node_modules/.cache/.tsbuildinfo",
 
         "experimentalDecorators": true,
 
@@ -15,22 +23,39 @@
         // Linting
         "noUnusedLocals": true,
         "noUnusedParameters": true,
+        "forceConsistentCasingInFileNames": true,
+        "importsNotUsedAsValues": "error",
 
         // Library
         "preserveConstEnums": true,
         "isolatedModules": true,
+        "noImplicitOverride": true,
+        "noPropertyAccessFromIndexSignature": true,
 
         // Output
         "outDir": "dist/",
         "rootDir": "src/",
-        "newLine": "LF"
+        "newLine": "LF",
+
+        "jsx": "react",
+        "jsxFactory": "JSX.createElement",
+        "jsxFragmentFactory": "JSX.Fragment"
     },
-    "include": ["src/**/*.ts"],
+    "include": ["src"],
     "exclude": [
-        "src/test/converter/**/*.ts",
-        "src/test/converter2/**/*.ts",
+        "src/lib/output/themes/default/assets",
+        "src/test/converter",
+        "src/test/converter2",
         "src/test/renderer/specs",
-        "src/test/.dot/**/*.ts",
-        "src/test/module/**/*.ts"
-    ]
+        "src/test/.dot",
+        "src/test/module",
+        "src/test/packages",
+        "src/test/slow/entry-points",
+        "src/test/renderer/testProject",
+        "src/codegen"
+    ],
+    // We use ts-node to support mocha runner directly on files
+    "ts-node": {
+        "transpileOnly": true
+    }
 }

@@ -1,8 +1,5 @@
-import * as _ from "lodash";
-
-import { Application } from "../application";
+import type { Application } from "../application";
 import { EventDispatcher, Event, EventMap } from "./events";
-import { DeclarationOption } from "./options/declaration";
 
 /**
  * Exposes a reference to the root Application component.
@@ -65,6 +62,8 @@ export function Component(options: ComponentOptions): ClassDecorator {
             proto.componentName = name;
         }
 
+        // If not marked internal, and if we are a subclass of another component T's declared
+        // childClass, then register ourselves as a _defaultComponents of T.
         const internal = !!options.internal;
         if (name && !internal) {
             for (const childMapping of childMappings) {
@@ -102,13 +101,6 @@ export class ComponentEvent extends Event {
 }
 
 /**
- * Dummy owner to be passed in to AbstractComponent / ChildableComponents if the class being constructed is
- * the application. The application does not have an owner and will return itself for component.application
- * and component.owner.
- */
-export const DUMMY_APPLICATION_OWNER = Symbol();
-
-/**
  * Component base class.  Has an owner (unless it's the application root component),
  * can dispatch events to its children, and has access to the root Application component.
  *
@@ -116,11 +108,12 @@ export const DUMMY_APPLICATION_OWNER = Symbol();
  */
 export abstract class AbstractComponent<O extends ComponentHost>
     extends EventDispatcher
-    implements ComponentHost {
+    implements ComponentHost
+{
     /**
      * The owner of this component instance.
      */
-    private _componentOwner: O | typeof DUMMY_APPLICATION_OWNER;
+    private _componentOwner: O;
 
     /**
      * The name of this component as set by the @Component decorator.
@@ -128,14 +121,9 @@ export abstract class AbstractComponent<O extends ComponentHost>
     public componentName!: string;
 
     /**
-     * A list of options defined by this component.
-     */
-    private _componentOptions?: DeclarationOption[];
-
-    /**
      * Create new Component instance.
      */
-    constructor(owner: O | typeof DUMMY_APPLICATION_OWNER) {
+    constructor(owner: O) {
         super();
         this._componentOwner = owner;
         this.initialize();
@@ -153,7 +141,7 @@ export abstract class AbstractComponent<O extends ComponentHost>
 
         if (
             this.owner instanceof AbstractComponent &&
-            this._componentOwner !== DUMMY_APPLICATION_OWNER
+            this._componentOwner !== null
         ) {
             this.owner.bubble(name, ...args);
         }
@@ -162,26 +150,27 @@ export abstract class AbstractComponent<O extends ComponentHost>
     }
 
     /**
-     * Return all option declarations emitted by this component.
-     */
-    getOptionDeclarations(): DeclarationOption[] {
-        return (this._componentOptions || []).slice();
-    }
-
-    /**
      * Return the application / root component instance.
      */
     get application(): Application {
-        return this._componentOwner === DUMMY_APPLICATION_OWNER
-            ? ((this as any) as Application)
-            : this._componentOwner.application;
+        if (this._componentOwner === null) {
+            return this as any as Application;
+        }
+        // Temporary hack, Application.application is going away.
+        if (
+            this._componentOwner instanceof AbstractComponent &&
+            this._componentOwner._componentOwner === null
+        ) {
+            return this._componentOwner as any as Application;
+        }
+        return this._componentOwner.application;
     }
 
     /**
      * Return the owner of this component.
      */
     get owner(): O {
-        return this._componentOwner === DUMMY_APPLICATION_OWNER
+        return this._componentOwner === null
             ? (this as any)
             : this._componentOwner;
     }
@@ -207,10 +196,10 @@ export abstract class ChildableComponent<
     /**
      * Create new Component instance.
      */
-    constructor(owner: O | typeof DUMMY_APPLICATION_OWNER) {
+    constructor(owner: O) {
         super(owner);
 
-        _.entries(this._defaultComponents || {}).forEach(
+        Object.entries(this._defaultComponents || {}).forEach(
             ([name, component]) => {
                 this.addComponent(name, component);
             }
@@ -227,7 +216,7 @@ export abstract class ChildableComponent<
     }
 
     getComponents(): C[] {
-        return _.values(this._componentChildren);
+        return Object.values(this._componentChildren || {});
     }
 
     hasComponent(name: string): boolean {
@@ -278,7 +267,7 @@ export abstract class ChildableComponent<
     }
 
     removeAllComponents() {
-        for (const component of _.values(this._componentChildren)) {
+        for (const component of Object.values(this._componentChildren || {})) {
             component.stopListening();
         }
 

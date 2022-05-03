@@ -3,12 +3,29 @@
  * the item will be inserted later will be placed earlier in the array.
  * @param arr modified by inserting item.
  * @param item
+ * @deprecated this is confusing, it sorts with lower priority being placed earlier. Prefer insertOrderSorted, which is nearly the same.
  */
 export function insertPrioritySorted<T extends { priority: number }>(
     arr: T[],
     item: T
 ): T[] {
     const index = binaryFindPartition(arr, (v) => v.priority >= item.priority);
+    arr.splice(index === -1 ? arr.length : index, 0, item);
+    return arr;
+}
+
+/**
+ * Inserts an item into an array sorted by order. If two items have the same order,
+ * the item inserted later will be placed later in the array.
+ * The array will be sorted with lower order being placed sooner.
+ * @param arr modified by inserting item.
+ * @param item
+ */
+export function insertOrderSorted<T extends { order: number }>(
+    arr: T[],
+    item: T
+): T[] {
+    const index = binaryFindPartition(arr, (v) => v.order > item.order);
     arr.splice(index === -1 ? arr.length : index, 0, item);
     return arr;
 }
@@ -81,22 +98,22 @@ export function unique<T>(arr: Iterable<T> | undefined): T[] {
     return Array.from(new Set(arr));
 }
 
-/**
- * Filters out duplicate values from the given array with a custom equals check.
- * @param arr
- */
-export function uniqueByEquals<T extends { equals(other: T): boolean }>(
-    arr: readonly T[] | undefined
-) {
-    const result: T[] = [];
+export function partition<T>(
+    iter: Iterable<T>,
+    predicate: (item: T) => boolean
+): [T[], T[]] {
+    const left: T[] = [];
+    const right: T[] = [];
 
-    for (const item of arr ?? []) {
-        if (result.every((other) => !other.equals(item))) {
-            result.push(item);
+    for (const item of iter) {
+        if (predicate(item)) {
+            left.push(item);
+        } else {
+            right.push(item);
         }
     }
 
-    return result;
+    return [left, right];
 }
 
 /**
@@ -142,7 +159,7 @@ export function filterMap<T, U>(
 
 export function flatMap<T, U>(
     arr: readonly T[],
-    fn: (item: T) => U | readonly U[]
+    fn: (item: T) => U | readonly U[] | undefined
 ): U[] {
     const result: U[] = [];
 
@@ -150,7 +167,7 @@ export function flatMap<T, U>(
         const newItem = fn(item);
         if (newItem instanceof Array) {
             result.push(...newItem);
-        } else {
+        } else if (newItem != null) {
             result.push(newItem);
         }
     }

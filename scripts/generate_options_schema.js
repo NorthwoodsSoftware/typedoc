@@ -28,20 +28,32 @@ addTypeDocOptions({
             case ParameterType.Array:
                 data.type = "array";
                 data.items = { type: "string" };
-                data.default = option.defaultValue ?? [];
+                data.default =
+                    /** @type {import("../dist").ArrayDeclarationOption} */ (
+                        option
+                    ).defaultValue ?? [];
                 break;
             case ParameterType.String:
                 data.type = "string";
                 if (!IGNORED_DEFAULT_OPTIONS.has(option.name)) {
-                    data.default = option.defaultValue ?? "";
+                    data.default =
+                        /** @type {import("../dist").StringDeclarationOption} */ (
+                            option
+                        ).defaultValue ?? "";
                 }
                 break;
             case ParameterType.Boolean:
                 data.type = "boolean";
-                data.default = option.defaultValue ?? false;
+                data.default =
+                    /** @type {import("../dist").BooleanDeclarationOption} */ (
+                        option
+                    ).defaultValue ?? false;
                 break;
             case ParameterType.Number: {
-                const decl = /** @type {import("../dist").NumberDeclarationOption} */ (option);
+                const decl =
+                    /** @type {import("../dist").NumberDeclarationOption} */ (
+                        option
+                    );
                 data.type = "number";
                 data.default = decl.defaultValue ?? 0;
                 data.maximum = decl.maxValue;
@@ -49,14 +61,48 @@ addTypeDocOptions({
                 break;
             }
             case ParameterType.Map: {
-                const map = /** @type {import("../dist").MapDeclarationOption} */ (option)
-                    .map;
+                const map =
+                    /** @type {import("../dist").MapDeclarationOption} */ (
+                        option
+                    ).map;
                 data.enum =
                     map instanceof Map
                         ? [...map.keys()]
                         : Object.keys(map).filter((key) => isNaN(+key));
-                data.default = option.defaultValue;
+                data.default =
+                    /** @type {import("../dist").MapDeclarationOption} */ (
+                        option
+                    ).defaultValue;
+                if (!data.enum.includes(data.default)) {
+                    for (const [k, v] of map instanceof Map
+                        ? map
+                        : Object.entries(map)) {
+                        if (v === data.default) {
+                            data.default = k;
+                            break;
+                        }
+                    }
+                }
                 break;
+            }
+            case ParameterType.Flags: {
+                const flagsObj = {
+                    type: "object",
+                    properties: {},
+                };
+                const defaults =
+                    /** @type {import("../dist").FlagsDeclarationOption<Record<string, boolean>>} */ (
+                        option
+                    ).defaults;
+
+                for (const key of Object.keys(defaults)) {
+                    flagsObj.properties[key] = {
+                        type: "boolean",
+                    };
+                }
+                flagsObj.additionalProperties = false;
+                data.anyOf = [{ type: "boolean" }, flagsObj];
+                data.default = defaults;
             }
             case ParameterType.Mixed:
                 break; // Nothing to do... TypeDoc really shouldn't have any of these.

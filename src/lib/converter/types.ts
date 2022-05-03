@@ -23,12 +23,13 @@ import {
     MappedType,
     SignatureReflection,
     ReflectionFlag,
+    OptionalType,
+    RestType,
+    TemplateLiteralType,
+    SomeType,
 } from "../models";
-import { OptionalType } from "../models/types/optional";
-import { RestType } from "../models/types/rest";
-import { TemplateLiteralType } from "../models/types/template-literal";
 import { zip } from "../utils/array";
-import { Context } from "./context";
+import type { Context } from "./context";
 import { ConverterEvents } from "./converter-events";
 import { convertIndexSignature } from "./factories/index-signature";
 import {
@@ -45,10 +46,10 @@ export interface TypeConverter<
 > {
     kind: TNode["kind"][];
     // getTypeAtLocation is expensive, so don't pass the type here.
-    convert(context: Context, node: TNode): Type;
+    convert(context: Context, node: TNode): SomeType;
     // We use typeToTypeNode to figure out what method to call in the first place,
     // so we have a non-type-checkable node here, necessary for some converters.
-    convertType(context: Context, type: TType, node: TNode): Type;
+    convertType(context: Context, type: TType, node: TNode): SomeType;
 }
 
 const converters = new Map<ts.SyntaxKind, TypeConverter>();
@@ -76,9 +77,6 @@ export function loadConverters() {
         restConverter,
         namedTupleMemberConverter,
         mappedConverter,
-        ts3LiteralBooleanConverter,
-        ts3LiteralNullConverter,
-        ts3LiteralThisConverter,
         literalTypeConverter,
         templateLiteralConverter,
         thisConverter,
@@ -107,7 +105,7 @@ const seenTypeSymbols = new Set<ts.Symbol>();
 export function convertType(
     context: Context,
     typeOrNode: ts.Type | ts.TypeNode | undefined
-): Type {
+): SomeType {
     if (!typeOrNode) {
         return new IntrinsicType("any");
     }
@@ -283,10 +281,9 @@ const exprWithTypeArgsConverter: TypeConverter<
         }
         const parameters =
             node.typeArguments?.map((type) => convertType(context, type)) ?? [];
-        const ref = new ReferenceType(
-            targetSymbol.name,
+        const ref = ReferenceType.createSymbolReference(
             context.resolveAliasedSymbol(targetSymbol),
-            context.project
+            context
         );
         ref.typeArguments = parameters;
         return ref;
@@ -364,12 +361,20 @@ const importType: TypeConverter<ts.ImportTypeNode> = {
         const name = node.qualifier?.getText() ?? "__module";
         const symbol = context.checker.getSymbolAtLocation(node);
         assert(symbol, "Missing symbol when converting import type node");
-        return new ReferenceType(name, symbol, context.project);
+        return ReferenceType.createSymbolReference(
+            context.resolveAliasedSymbol(symbol),
+            context,
+            name
+        );
     },
     convertType(context, type) {
         const symbol = type.getSymbol();
         assert(symbol, "Missing symbol when converting import type"); // Should be a compiler error
-        return new ReferenceType("__module", symbol, context.project);
+        return ReferenceType.createSymbolReference(
+            context.resolveAliasedSymbol(symbol),
+            context,
+            "__module"
+        );
     },
 };
 
@@ -565,12 +570,23 @@ const typeLiteralConverter: TypeConverter<ts.TypeLiteralNode> = {
 const queryConverter: TypeConverter<ts.TypeQueryNode> = {
     kind: [ts.SyntaxKind.TypeQuery],
     convert(context, node) {
-        const querySymbol = context.expectSymbolAtLocation(node.exprName);
+        const querySymbol = context.getSymbolAtLocation(node.exprName);
+        if (!querySymbol) {
+            // This can happen if someone uses `typeof` on some property
+            // on a variable typed as `any` with a name that doesn't exist.
+            return new QueryType(
+                ReferenceType.createBrokenReference(
+                    node.exprName.getText(),
+                    context.project
+                )
+            );
+        }
+
         return new QueryType(
-            new ReferenceType(
-                node.exprName.getText(),
+            ReferenceType.createSymbolReference(
                 context.resolveAliasedSymbol(querySymbol),
-                context.project
+                context,
+                node.exprName.getText()
             )
         );
     },
@@ -583,10 +599,9 @@ const queryConverter: TypeConverter<ts.TypeQueryNode> = {
             )}. This is a bug.`
         );
         return new QueryType(
-            new ReferenceType(
-                symbol.name,
+            ReferenceType.createSymbolReference(
                 context.resolveAliasedSymbol(symbol),
-                context.project
+                context
             )
         );
     },
@@ -613,10 +628,10 @@ const referenceConverter: TypeConverter<
 
         const name = node.typeName.getText();
 
-        const type = new ReferenceType(
-            name,
+        const type = ReferenceType.createSymbolReference(
             context.resolveAliasedSymbol(symbol),
-            context.project
+            context,
+            name
         );
         type.typeArguments = node.typeArguments?.map((type) =>
             convertType(context, type)
@@ -634,14 +649,12 @@ const referenceConverter: TypeConverter<
             );
         }
 
-        const ref = new ReferenceType(
-            symbol.name,
+        const ref = ReferenceType.createSymbolReference(
             context.resolveAliasedSymbol(symbol),
-            context.project
+            context
         );
-        ref.typeArguments = (type.aliasSymbol
-            ? type.aliasTypeArguments
-            : type.typeArguments
+        ref.typeArguments = (
+            type.aliasSymbol ? type.aliasTypeArguments : type.typeArguments
         )?.map((ref) => convertType(context, ref));
         return ref;
     },
@@ -720,104 +733,76 @@ const mappedConverter: TypeConverter<
     },
 };
 
-const ts3LiteralBooleanConverter: TypeConverter<ts.TypeNode, ts.Type> = {
-    kind: [ts.SyntaxKind.TrueKeyword, ts.SyntaxKind.FalseKeyword],
-    convert(_context, node) {
-        return new LiteralType(node.kind === ts.SyntaxKind.TrueKeyword);
-    },
-    convertType(_context, _type, node) {
-        return new LiteralType(node.kind === ts.SyntaxKind.TrueKeyword);
-    },
-};
-
-const ts3LiteralNullConverter: TypeConverter<ts.TypeNode, ts.Type> = {
-    kind: [ts.SyntaxKind.NullKeyword],
-    convert() {
-        return new LiteralType(null);
-    },
-    convertType() {
-        return new LiteralType(null);
-    },
-};
-
-const ts3LiteralThisConverter: TypeConverter<ts.TypeNode, ts.Type> = {
-    kind: [ts.SyntaxKind.ThisKeyword],
-    convert() {
-        return new IntrinsicType("this");
-    },
-    convertType() {
-        return new IntrinsicType("this");
-    },
-};
-
-const literalTypeConverter: TypeConverter<
-    ts.LiteralTypeNode,
-    ts.LiteralType
-> = {
-    kind: [ts.SyntaxKind.LiteralType],
-    convert(context, node) {
-        switch (node.literal.kind) {
-            case ts.SyntaxKind.TrueKeyword:
-            case ts.SyntaxKind.FalseKeyword:
-                return new LiteralType(
-                    node.literal.kind === ts.SyntaxKind.TrueKeyword
-                );
-            case ts.SyntaxKind.StringLiteral:
-                return new LiteralType(node.literal.text);
-            case ts.SyntaxKind.NumericLiteral:
-                return new LiteralType(Number(node.literal.text));
-            case ts.SyntaxKind.NullKeyword:
-                return new LiteralType(null);
-            case ts.SyntaxKind.PrefixUnaryExpression: {
-                const operand = (node.literal as ts.PrefixUnaryExpression)
-                    .operand;
-                switch (operand.kind) {
-                    case ts.SyntaxKind.NumericLiteral:
-                        return new LiteralType(Number(node.literal.getText()));
-                    case ts.SyntaxKind.BigIntLiteral:
-                        return new LiteralType(
-                            BigInt(node.literal.getText().replace("n", ""))
-                        );
-                    default:
-                        return requestBugReport(context, node.literal);
+const literalTypeConverter: TypeConverter<ts.LiteralTypeNode, ts.LiteralType> =
+    {
+        kind: [ts.SyntaxKind.LiteralType],
+        convert(context, node) {
+            switch (node.literal.kind) {
+                case ts.SyntaxKind.TrueKeyword:
+                case ts.SyntaxKind.FalseKeyword:
+                    return new LiteralType(
+                        node.literal.kind === ts.SyntaxKind.TrueKeyword
+                    );
+                case ts.SyntaxKind.StringLiteral:
+                    return new LiteralType(node.literal.text);
+                case ts.SyntaxKind.NumericLiteral:
+                    return new LiteralType(Number(node.literal.text));
+                case ts.SyntaxKind.NullKeyword:
+                    return new LiteralType(null);
+                case ts.SyntaxKind.PrefixUnaryExpression: {
+                    const operand = (node.literal as ts.PrefixUnaryExpression)
+                        .operand;
+                    switch (operand.kind) {
+                        case ts.SyntaxKind.NumericLiteral:
+                            return new LiteralType(
+                                Number(node.literal.getText())
+                            );
+                        case ts.SyntaxKind.BigIntLiteral:
+                            return new LiteralType(
+                                BigInt(node.literal.getText().replace("n", ""))
+                            );
+                        default:
+                            return requestBugReport(context, node.literal);
+                    }
                 }
+                case ts.SyntaxKind.BigIntLiteral:
+                    return new LiteralType(
+                        BigInt(node.literal.getText().replace("n", ""))
+                    );
+                case ts.SyntaxKind.NoSubstitutionTemplateLiteral:
+                    return new LiteralType(node.literal.text);
             }
-            case ts.SyntaxKind.BigIntLiteral:
+
+            return requestBugReport(context, node.literal);
+        },
+        convertType(_context, type, node) {
+            switch (node.literal.kind) {
+                case ts.SyntaxKind.StringLiteral:
+                    return new LiteralType(node.literal.text);
+                case ts.SyntaxKind.NumericLiteral:
+                    return new LiteralType(+node.literal.text);
+                case ts.SyntaxKind.TrueKeyword:
+                case ts.SyntaxKind.FalseKeyword:
+                    return new LiteralType(
+                        node.literal.kind === ts.SyntaxKind.TrueKeyword
+                    );
+                case ts.SyntaxKind.NullKeyword:
+                    return new LiteralType(null);
+            }
+
+            if (typeof type.value === "object") {
                 return new LiteralType(
-                    BigInt(node.literal.getText().replace("n", ""))
+                    BigInt(
+                        `${type.value.negative ? "-" : ""}${
+                            type.value.base10Value
+                        }`
+                    )
                 );
-            case ts.SyntaxKind.NoSubstitutionTemplateLiteral:
-                return new LiteralType(node.literal.text);
-        }
+            }
 
-        return requestBugReport(context, node.literal);
-    },
-    convertType(_context, type, node) {
-        switch (node.literal.kind) {
-            case ts.SyntaxKind.StringLiteral:
-                return new LiteralType(node.literal.text);
-            case ts.SyntaxKind.NumericLiteral:
-                return new LiteralType(+node.literal.text);
-            case ts.SyntaxKind.TrueKeyword:
-            case ts.SyntaxKind.FalseKeyword:
-                return new LiteralType(
-                    node.literal.kind === ts.SyntaxKind.TrueKeyword
-                );
-            case ts.SyntaxKind.NullKeyword:
-                return new LiteralType(null);
-        }
-
-        if (typeof type.value === "object") {
-            return new LiteralType(
-                BigInt(
-                    `${type.value.negative ? "-" : ""}${type.value.base10Value}`
-                )
-            );
-        }
-
-        return new LiteralType(type.value);
-    },
-};
+            return new LiteralType(type.value);
+        },
+    };
 
 const templateLiteralConverter: TypeConverter<
     ts.TemplateLiteralTypeNode,
@@ -856,17 +841,13 @@ const thisConverter: TypeConverter<ts.ThisTypeNode> = {
 const tupleConverter: TypeConverter<ts.TupleTypeNode, ts.TupleTypeReference> = {
     kind: [ts.SyntaxKind.TupleType],
     convert(context, node) {
-        // TS 3.9 support
-        const elementTypes = node.elements ?? (node as any).elementTypes;
-        const elements = elementTypes.map((node) => convertType(context, node));
+        const elements = node.elements.map((node) =>
+            convertType(context, node)
+        );
         return new TupleType(elements);
     },
     convertType(context, type, node) {
-        // TS 3.9 support
-        const elementTypes = node.elements ?? (node as any).elementTypes;
-        // We need to do this because of type argument constraints, see GH1449
-        // In TS 4.0 we could use type.target.fixedLength
-        const types = type.typeArguments?.slice(0, elementTypes.length);
+        const types = type.typeArguments?.slice(0, node.elements.length);
         let elements = types?.map((type) => convertType(context, type));
 
         if (type.target.labeledElementDeclarations) {
@@ -881,34 +862,31 @@ const tupleConverter: TypeConverter<ts.TupleTypeNode, ts.TupleTypeReference> = {
             );
         }
 
-        // TS 3.9 support - always defined in 4.0
-        if (type.target.elementFlags) {
-            elements = elements?.map((el, i) => {
-                if (type.target.elementFlags[i] & ts.ElementFlags.Variable) {
-                    // In the node case, we don't need to add the wrapping Array type... but we do here.
-                    if (el instanceof NamedTupleMember) {
-                        return new RestType(
-                            new NamedTupleMember(
-                                el.name,
-                                el.isOptional,
-                                new ArrayType(el.element)
-                            )
-                        );
-                    }
-
-                    return new RestType(new ArrayType(el));
+        elements = elements?.map((el, i) => {
+            if (type.target.elementFlags[i] & ts.ElementFlags.Variable) {
+                // In the node case, we don't need to add the wrapping Array type... but we do here.
+                if (el instanceof NamedTupleMember) {
+                    return new RestType(
+                        new NamedTupleMember(
+                            el.name,
+                            el.isOptional,
+                            new ArrayType(el.element)
+                        )
+                    );
                 }
 
-                if (
-                    type.target.elementFlags[i] & ts.ElementFlags.Optional &&
-                    !(el instanceof NamedTupleMember)
-                ) {
-                    return new OptionalType(removeUndefined(el));
-                }
+                return new RestType(new ArrayType(el));
+            }
 
-                return el;
-            });
-        }
+            if (
+                type.target.elementFlags[i] & ts.ElementFlags.Optional &&
+                !(el instanceof NamedTupleMember)
+            ) {
+                return new OptionalType(removeUndefined(el));
+            }
+
+            return el;
+        });
 
         return new TupleType(elements ?? []);
     },

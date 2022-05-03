@@ -7,9 +7,9 @@ yarn.lock
 .nyc_output
 yarn-error.log
 
-/examples/*/doc
-/examples/basic/json.json
-/node_modules/
+/src/test/renderer/*/doc
+/src/test/renderer/testProject/json.json
+**/node_modules/
 /coverage/
 /dist/
 
@@ -19,6 +19,7 @@ tmp
 src/test/renderer/specs/assets/*
 src/test/renderer/specs/specs.json
 
-# This is maintained in the typedoc-site repo, but might be created here
-# if someone is experimenting with the generate_changelog script.
-CHANGELOG.md
+# Built theme JS
+static/main.js
+
+/example/docs/

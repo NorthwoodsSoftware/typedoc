@@ -1,0 +1,5 @@
+{
+    "timeout": 0,
+    "spec": "src/test/**/*.test.ts",
+    "exclude": ["src/test/packages/**"]
+}

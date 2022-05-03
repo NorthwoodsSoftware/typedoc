@@ -5,7 +5,7 @@ import {
     ProjectReflection,
     DeclarationReflection,
 } from "../models/reflections/index";
-import { Renderer } from "./renderer";
+import type { Renderer } from "./renderer";
 import { RendererEvent, PageEvent } from "./events";
 
 export { Component };
@@ -42,7 +42,7 @@ export abstract class ContextAwareRendererComponent extends RendererComponent {
      *
      * @param renderer  The renderer this plugin should be attached to.
      */
-    protected initialize() {
+    protected override initialize() {
         this.listenTo(this.owner, {
             [RendererEvent.BEGIN]: this.onBeginRenderer,
             [PageEvent.BEGIN]: this.onBeginPage,

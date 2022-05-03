@@ -1,7 +1,7 @@
 import { ArrayType } from "../../../models";
 
 import { TypeSerializerComponent } from "../../components";
-import { ArrayType as JSONArrayType } from "../../schema";
+import type { ArrayType as JSONArrayType } from "../../schema";
 
 export class ArrayTypeSerializer extends TypeSerializerComponent<ArrayType> {
     supports(t: unknown) {
@@ -9,7 +9,7 @@ export class ArrayTypeSerializer extends TypeSerializerComponent<ArrayType> {
     }
 
     /**
-     * Will be run after [[TypeSerializer]] so `type` will already be set.
+     * Will be run after {@link TypeSerializer} so `type` will already be set.
      * @param type
      * @param obj
      */

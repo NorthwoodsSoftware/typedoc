@@ -1,7 +1,7 @@
 import { UnknownType } from "../../../models";
 
 import { TypeSerializerComponent } from "../../components";
-import { UnknownType as JSONUnknownType } from "../../schema";
+import type { UnknownType as JSONUnknownType } from "../../schema";
 
 export class UnknownTypeSerializer extends TypeSerializerComponent<UnknownType> {
     supports(t: unknown) {
@@ -9,7 +9,7 @@ export class UnknownTypeSerializer extends TypeSerializerComponent<UnknownType> 
     }
 
     /**
-     * Will be run after [[TypeSerializer]] so `type` will already be set.
+     * Will be run after {@link TypeSerializer} so `type` will already be set.
      * @param type
      * @param obj
      */

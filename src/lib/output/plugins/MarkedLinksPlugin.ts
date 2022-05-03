@@ -1,9 +1,9 @@
 import * as Util from "util";
 
-import { Reflection } from "../../models/reflections/abstract";
+import type { Reflection } from "../../models/reflections/abstract";
 import { Component, ContextAwareRendererComponent } from "../components";
 import { MarkdownEvent, RendererEvent } from "../events";
-import { BindOption } from "../../utils";
+import { BindOption, ValidationOptions } from "../../utils";
 
 /**
  * A plugin that builds links in markdown texts.
@@ -18,7 +18,8 @@ export class MarkedLinksPlugin extends ContextAwareRendererComponent {
     /**
      * Regular expression for detecting inline tags like {&amp;link ...}.
      */
-    private inlineTag = /(?:\[(.+?)\])?\{@(link|linkcode|linkplain)\s+((?:.|\n)+?)\}/gi;
+    private inlineTag =
+        /(?:\[(.+?)\])?\{@(link|linkcode|linkplain)\s+((?:.|\n)+?)\}/gi;
 
     @BindOption("listInvalidSymbolLinks")
     listInvalidSymbolLinks!: boolean;
@@ -29,12 +30,15 @@ export class MarkedLinksPlugin extends ContextAwareRendererComponent {
     @BindOption("isGoCloudStorage")
     isGoCloudStorage!: boolean;
 
+    @BindOption("validation")
+    validation!: ValidationOptions;
+
     private warnings: string[] = [];
 
     /**
      * Create a new MarkedLinksPlugin instance.
      */
-    initialize() {
+    override initialize() {
         super.initialize();
         this.listenTo(
             this.owner,
@@ -162,7 +166,7 @@ export class MarkedLinksPlugin extends ContextAwareRendererComponent {
                 }
             } else {
                 const fullName = (this.reflection ||
-                    this.project)!.getFullName();
+                    this.project)!.getFriendlyFullName();
                 this.warnings.push(`In ${fullName}: ${original}`);
                 return original;
             }
@@ -181,7 +185,7 @@ export class MarkedLinksPlugin extends ContextAwareRendererComponent {
     }
 
     /**
-     * Triggered when [[MarkedPlugin]] parses a markdown string.
+     * Triggered when {@link MarkedPlugin} parses a markdown string.
      *
      * @param event
      */
@@ -192,20 +196,26 @@ export class MarkedLinksPlugin extends ContextAwareRendererComponent {
     }
 
     /**
-     * Triggered when [[Renderer]] is finished
+     * Triggered when {@link Renderer} is finished
      */
     onEndRenderer(_event: RendererEvent) {
-        if (this.listInvalidSymbolLinks && this.warnings.length > 0) {
-            this.application.logger.write("");
+        const enabled =
+            this.listInvalidSymbolLinks || this.validation.invalidLink;
+        if (this.listInvalidSymbolLinks) {
             this.application.logger.warn(
-                "[MarkedLinksPlugin]: Found invalid symbol reference(s) in JSDocs, " +
-                    "they will not render as links in the generated documentation."
+                "listInvalidSymbolLinks is deprecated and will be removed in 0.23, set validation.invalidLink instead."
             );
-
-            for (const warning of this.warnings) {
-                this.application.logger.write("  " + warning);
-            }
         }
+
+        if (enabled && this.warnings.length > 0) {
+            this.application.logger.warn(
+                "\n[MarkedLinksPlugin]: Found invalid symbol reference(s) in JSDocs, " +
+                    "they will not render as links in the generated documentation." +
+                    "\n  " +
+                    this.warnings.join("\n  ")
+            );
+        }
+        this.warnings = [];
     }
 
     /**

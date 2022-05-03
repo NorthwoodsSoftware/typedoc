@@ -1,7 +1,7 @@
 import { RestType } from "../../../models";
 
 import { TypeSerializerComponent } from "../../components";
-import { RestType as JSONRestType } from "../../schema";
+import type { RestType as JSONRestType } from "../../schema";
 
 export class RestTypeSerializer extends TypeSerializerComponent<RestType> {
     supports(t: unknown) {
@@ -9,7 +9,7 @@ export class RestTypeSerializer extends TypeSerializerComponent<RestType> {
     }
 
     /**
-     * Will be run after [[TypeSerializer]] so `type` will already be set.
+     * Will be run after {@link TypeSerializer} so `type` will already be set.
      * @param type
      * @param obj
      */

@@ -1,10 +1,11 @@
 {
   "name": "typedoc",
   "description": "Create api documentation for TypeScript projects.",
-  "version": "0.20.35",
+  "version": "0.22.15",
   "homepage": "https://typedoc.org",
-  "main": "dist/index.js",
-  "typings": "dist/index.d.ts",
+  "main": "./dist/index.js",
+  "exports": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "bin": {
     "typedoc": "bin/typedoc"
   },
@@ -17,64 +18,67 @@
     "url": "https://github.com/TypeStrong/TypeDoc/issues"
   },
   "engines": {
-    "node": ">= 10.8.0"
+    "node": ">= 12.10.0"
   },
   "dependencies": {
-    "colors": "^1.4.0",
-    "fs-extra": "^9.1.0",
-    "handlebars": "^4.7.7",
-    "lodash": "^4.17.21",
+    "glob": "^7.2.0",
     "lunr": "^2.3.9",
-    "marked": "^2.0.1",
-    "minimatch": "^3.0.0",
-    "progress": "^2.0.3",
-    "shelljs": "^0.8.4",
-    "shiki": "^0.9.3",
-    "typedoc-default-themes": "^0.12.9"
+    "marked": "^4.0.12",
+    "minimatch": "^5.0.1",
+    "shiki": "^0.10.1"
   },
   "peerDependencies": {
-    "typescript": "3.9.x || 4.0.x || 4.1.x || 4.2.x"
+    "typescript": "4.0.x || 4.1.x || 4.2.x || 4.3.x || 4.4.x || 4.5.x || 4.6.x"
   },
   "devDependencies": {
-    "@types/fs-extra": "^9.0.8",
-    "@types/lodash": "^4.14.168",
-    "@types/lunr": "^2.3.3",
-    "@types/marked": "^2.0.0",
-    "@types/minimatch": "3.0.3",
-    "@types/mocha": "^8.2.1",
-    "@types/mockery": "^1.4.29",
-    "@types/node": "^14.14.34",
-    "@types/semver": "^7.3.4",
-    "@types/shelljs": "^0.8.8",
-    "@typescript-eslint/eslint-plugin": "^4.17.0",
-    "@typescript-eslint/parser": "^4.17.0",
-    "eslint": "^7.22.0",
-    "mocha": "^8.3.0",
-    "mockery": "^2.1.0",
+    "@types/glob": "^7.2.0",
+    "@types/lunr": "^2.3.4",
+    "@types/marked": "^4.0.3",
+    "@types/minimatch": "3.0.5",
+    "@types/mocha": "^9.1.0",
+    "@types/node": "^17.0.23",
+    "@typescript-eslint/eslint-plugin": "^5.18.0",
+    "@typescript-eslint/parser": "^5.18.0",
+    "esbuild": "^0.14.34",
+    "eslint": "^8.13.0",
+    "mocha": "^9.2.1",
     "nyc": "^15.1.0",
-    "prettier": "^2.2.1",
-    "typescript": "^4.2.3"
+    "prettier": "2.6.2",
+    "puppeteer": "^13.5.2",
+    "reg-notify-github-plugin": "^0.11.1",
+    "reg-suit": "^0.11.1",
+    "reg-suit-core": "^0.11.1",
+    "reg-suit-interface": "^0.11.0",
+    "ts-node": "^10.7.0",
+    "typescript": "^4.6.3"
   },
   "files": [
-    "bin",
-    "dist",
+    "/bin",
     "!*.map",
-    "!dist/test",
-    "tasks",
-    "LICENSE"
+    "/dist",
+    "!/dist/tmp",
+    "!/dist/test",
+    "/LICENSE",
+    "/static"
   ],
   "scripts": {
     "pretest": "node scripts/copy_test_files.js",
-    "test": "nyc --reporter=html --reporter=text-summary mocha --timeout=10000 'dist/test/**/*.test.js'",
+    "test": "mocha -r ts-node/register --config .config/mocha.fast.json",
+    "pretest:full": "npm run pretest",
+    "test:full": "nyc mocha -r ts-node/register --config .config/mocha.full.json",
+    "test:visual": "node ./dist/test/capture-screenshots.js && reg-suit -c .config/regconfig.json compare",
+    "test:visual:accept": "node scripts/accept_visual_regression.js",
     "prerebuild_specs": "npm run pretest",
     "rebuild_specs": "node scripts/rebuild_specs.js",
-    "build": "tsc --project .",
-    "build:prod": "tsc --project . --sourceMap false",
-    "build_and_test": "npm run build && npm run test",
-    "lint": "eslint . && prettier --check .",
+    "build": "npm run build:tsc && npm run build:themes",
+    "build:tsc": "tsc --project .",
+    "build:themes": "esbuild src/lib/output/themes/default/assets/bootstrap.ts --bundle --minify --outfile=static/main.js",
+    "build:prod": "npm run build:prod:tsc && npm run build:themes",
+    "build:prod:tsc": "tsc --project . --sourceMap false",
+    "lint": "eslint . && npm run prettier -- --check .",
+    "prettier": "prettier --config .config/.prettierrc.json --ignore-path .config/.prettierignore",
     "prepublishOnly": "node scripts/set_strict.js false && npm run build:prod && npm test",
-    "postpublish": "node scripts/set_strict.js true",
-    "clean": "rm -rf node_modules package-lock.json lib coverage"
+    "postpublish": "node scripts/set_strict.js true"
   },
   "keywords": [
     "typescript",
@@ -86,8 +90,13 @@
       ".ts",
       ".tsx"
     ],
+    "reporter": [
+      "html",
+      "text-summary"
+    ],
     "exclude": [
-      "**/*.d.ts"
+      "**/*.d.ts",
+      "src/test"
     ]
   }
 }

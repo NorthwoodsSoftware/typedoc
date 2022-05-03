@@ -1,21 +1,19 @@
-import { isDeepStrictEqual } from "util";
-import * as _ from "lodash";
-import * as ts from "typescript";
-
+import type * as ts from "typescript";
+import { ParameterType } from "./declaration";
+import type { NeverIfInternal } from "..";
+import type { Application } from "../../..";
+import { insertPrioritySorted, unique } from "../array";
+import type { Logger } from "../loggers";
 import {
     convert,
     DeclarationOption,
+    getDefaultValue,
     KeyToDeclaration,
-    ParameterType,
     TypeDocOptionMap,
     TypeDocOptions,
     TypeDocOptionValues,
 } from "./declaration";
-import { Logger } from "../loggers";
-import { insertPrioritySorted, unique } from "../array";
 import { addTypeDocOptions } from "./sources";
-import { Application } from "../../..";
-import { NeverIfInternal } from "..";
 
 /**
  * Describes an option reader that discovers user configuration and converts it to the
@@ -30,6 +28,8 @@ export interface OptionsReader {
      * Note that to preserve expected behavior, the argv reader must have both the lowest
      * priority so that it may set the location of config files used by other readers and
      * the highest priority so that it can override settings from lower priority readers.
+     *
+     * Note: In 0.23. `priority` will be renamed to `order`, with the same meaning
      */
     priority: number;
 
@@ -43,9 +43,9 @@ export interface OptionsReader {
     /**
      * Read options from the reader's source and place them in the options parameter.
      * Options without a declared name may be treated as if they were declared with type
-     * [[ParameterType.Mixed]]. Options which have been declared must be converted to the
+     * {@link ParameterType.Mixed}. Options which have been declared must be converted to the
      * correct type. As an alternative to doing this conversion in the reader,
-     * the reader may use [[Options.setValue]], which will correctly convert values.
+     * the reader may use {@link Options.setValue}, which will correctly convert values.
      * @param options
      * @param compilerOptions
      * @param container the options container that provides declarations
@@ -89,6 +89,20 @@ export class Options {
     }
 
     /**
+     * Marks the options as readonly, enables caching when fetching options, which improves performance.
+     */
+    freeze() {
+        Object.freeze(this._values);
+    }
+
+    /**
+     * Checks if the options object has been frozen, preventing future changes to option values.
+     */
+    isFrozen() {
+        return Object.isFrozen(this._values);
+    }
+
+    /**
      * Sets the logger used when an option declaration fails to be added.
      * @param logger
      */
@@ -105,14 +119,29 @@ export class Options {
 
     /**
      * Resets the option bag to all default values.
+     * If a name is provided, will only reset that name.
      */
-    reset() {
-        for (const declaration of this.getDeclarations()) {
-            this.setOptionValueToDefault(declaration);
+    reset(name?: keyof TypeDocOptions): void;
+    reset(name?: NeverIfInternal<string>): void;
+    reset(name?: string): void {
+        if (name != null) {
+            const declaration = this.getDeclaration(name);
+            if (!declaration) {
+                throw new Error(
+                    "Cannot reset an option which has not been declared."
+                );
+            }
+
+            this._values[declaration.name] = getDefaultValue(declaration);
+            this._setOptions.delete(declaration.name);
+        } else {
+            for (const declaration of this.getDeclarations()) {
+                this._values[declaration.name] = getDefaultValue(declaration);
+            }
+            this._setOptions.clear();
+            this._compilerOptions = {};
+            this._fileNames = [];
         }
-        this._setOptions.clear();
-        this._compilerOptions = {};
-        this._fileNames = [];
     }
 
     /**
@@ -127,6 +156,7 @@ export class Options {
     /**
      * Removes all readers of a given name.
      * @param name
+     * @deprecated should not be used, will be removed in 0.23
      */
     removeReaderByName(name: string): void {
         this._readers = this._readers.filter((reader) => reader.name !== name);
@@ -164,17 +194,13 @@ export class Options {
             this._declarations.set(declaration.name, declaration);
         }
 
-        this.setOptionValueToDefault(declaration);
+        this._values[declaration.name] = getDefaultValue(declaration);
     }
 
     /**
      * Adds the given declarations to the container
      * @param declarations
-     *
-     * @privateRemarks
-     * This function explicitly provides a way out of the strict typing enforced
-     * by {@link addDeclaration}. It should only be used with careful validation
-     * of the declaration map. Internally, it is only used for adding TS options
+     * @deprecated will be removed in 0.23.
      */
     addDeclarations(declarations: readonly DeclarationOption[]): void {
         for (const decl of declarations) {
@@ -187,6 +213,7 @@ export class Options {
      * WARNING: This is probably a bad idea. If you do this you will probably cause a crash
      * when code assumes that an option that it declared still exists.
      * @param name
+     * @deprecated will be removed in 0.23.
      */
     removeDeclarationByName(name: string): void {
         const declaration = this.getDeclaration(name);
@@ -213,21 +240,6 @@ export class Options {
 
     /**
      * Checks if the given option's value is deeply strict equal to the default.
-     * @deprecated Will be removed in v0.21. Use `isSet` instead.
-     * @param name
-     */
-    isDefault(name: keyof TypeDocOptions): boolean;
-    isDefault(name: NeverIfInternal<string>): boolean;
-    isDefault(name: string): boolean {
-        // getValue will throw if the declaration does not exist.
-        return isDeepStrictEqual(
-            this.getValue(name as keyof TypeDocOptions),
-            this.getDefaultOptionValue(this.getDeclaration(name)!)
-        );
-    }
-
-    /**
-     * Checks if the given option's value is deeply strict equal to the default.
      * @param name
      */
     isSet(name: keyof TypeDocOptions): boolean;
@@ -242,8 +254,8 @@ export class Options {
     /**
      * Gets all of the TypeDoc option values defined in this option container.
      */
-    getRawValues(): Partial<TypeDocOptions> {
-        return _.cloneDeep(this._values);
+    getRawValues(): Readonly<Partial<TypeDocOptions>> {
+        return this._values;
     }
 
     /**
@@ -265,16 +277,25 @@ export class Options {
      * Sets the given declared option. Throws if setting the option fails.
      * @param name
      * @param value
+     * @param configPath the directory to resolve Path type values against
      */
     setValue<K extends keyof TypeDocOptions>(
         name: K,
-        value: TypeDocOptions[K]
+        value: TypeDocOptions[K],
+        configPath?: string
     ): void;
     setValue(
         name: NeverIfInternal<string>,
-        value: NeverIfInternal<unknown>
+        value: NeverIfInternal<unknown>,
+        configPath?: NeverIfInternal<string>
     ): void;
-    setValue(name: string, value: unknown): void {
+    setValue(name: string, value: unknown, configPath?: string): void {
+        if (this.isFrozen()) {
+            throw new Error(
+                "Tried to modify an option value after options have been frozen."
+            );
+        }
+
         const declaration = this.getDeclaration(name);
         if (!declaration) {
             throw new Error(
@@ -282,8 +303,17 @@ export class Options {
             );
         }
 
-        const converted = convert(value, declaration);
-        this._values[declaration.name] = converted;
+        const converted = convert(
+            value,
+            declaration,
+            configPath ?? process.cwd()
+        );
+
+        if (declaration.type === ParameterType.Flags) {
+            Object.assign(this._values[declaration.name], converted);
+        } else {
+            this._values[declaration.name] = converted;
+        }
         this._setOptions.add(name);
     }
 
@@ -291,7 +321,29 @@ export class Options {
      * Gets the set compiler options.
      */
     getCompilerOptions(): ts.CompilerOptions {
-        return _.cloneDeep(this._compilerOptions);
+        return this.fixCompilerOptions(this._compilerOptions);
+    }
+
+    /** @internal */
+    fixCompilerOptions(
+        options: Readonly<ts.CompilerOptions>
+    ): ts.CompilerOptions {
+        const overrides = this.getValue("compilerOptions");
+        const result = { ...options };
+
+        if (overrides) {
+            Object.assign(result, overrides);
+        }
+
+        if (
+            this.getValue("emit") !== "both" &&
+            this.getValue("emit") !== true
+        ) {
+            result.noEmit = true;
+            delete result.emitDeclarationOnly;
+        }
+
+        return result;
     }
 
     /**
@@ -316,6 +368,12 @@ export class Options {
         options: ts.CompilerOptions,
         projectReferences: readonly ts.ProjectReference[] | undefined
     ) {
+        if (this.isFrozen()) {
+            throw new Error(
+                "Tried to modify an option value after options have been sealed."
+            );
+        }
+
         // We do this here instead of in the tsconfig reader so that API consumers which
         // supply a program to `Converter.convert` instead of letting TypeDoc create one
         // can just set the compiler options, and not need to know about this mapping.
@@ -325,35 +383,8 @@ export class Options {
             this.setValue("excludeInternal", true);
         }
         this._fileNames = fileNames;
-        this._compilerOptions = _.cloneDeep(options);
+        this._compilerOptions = { ...options };
         this._projectReferences = projectReferences ?? [];
-    }
-
-    /**
-     * Sets the value of a given option to its default value.
-     * @param declaration The option whose value should be reset.
-     */
-    private setOptionValueToDefault(
-        declaration: Readonly<DeclarationOption>
-    ): void {
-        this._values[declaration.name] = this.getDefaultOptionValue(
-            declaration
-        );
-    }
-
-    private getDefaultOptionValue(
-        declaration: Readonly<DeclarationOption>
-    ): unknown {
-        // No need to convert the defaultValue for a map type as it has to be of a specific type
-        // Also don't use convert for number options to allow every possible number as a default value.
-        if (
-            declaration.type === ParameterType.Map ||
-            declaration.type === ParameterType.Number
-        ) {
-            return declaration.defaultValue;
-        } else {
-            return convert(declaration.defaultValue, declaration);
-        }
     }
 }
 
@@ -365,8 +396,9 @@ export class Options {
 export function BindOption<K extends keyof TypeDocOptionMap>(
     name: K
 ): <IK extends PropertyKey>(
-    target: ({ application: Application } | { options: Options }) &
-        { [K2 in IK]: TypeDocOptionValues[K] },
+    target: ({ application: Application } | { options: Options }) & {
+        [K2 in IK]: TypeDocOptionValues[K];
+    },
     key: IK
 ) => void;
 
@@ -391,13 +423,15 @@ export function BindOption(name: string) {
     ) {
         Object.defineProperty(target, key, {
             get(this: { application: Application } | { options: Options }) {
-                if ("options" in this) {
-                    return this.options.getValue(name as keyof TypeDocOptions);
-                } else {
-                    return this.application.options.getValue(
-                        name as keyof TypeDocOptions
-                    );
+                const options =
+                    "options" in this ? this.options : this.application.options;
+                const value = options.getValue(name as keyof TypeDocOptions);
+
+                if (options.isFrozen()) {
+                    Object.defineProperty(this, key, { value });
                 }
+
+                return value;
             },
             enumerable: true,
             configurable: true,

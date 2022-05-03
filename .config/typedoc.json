@@ -1,0 +1,19 @@
+{
+    "$schema": "https://typedoc.org/schema.json",
+    "intentionallyNotExported": [
+        "ComponentClass",
+        "AbstractComponent",
+        "ConverterComponent",
+        "RendererComponent",
+        "SORT_STRATEGIES",
+        "_ModelToObject"
+    ],
+    "entryPoints": ["../src"],
+    "entryPointStrategy": "Resolve",
+    "excludeExternals": true,
+    "excludePrivate": true,
+    "excludeInternal": true,
+    "treatWarningsAsErrors": false,
+    "validation": true,
+    "logLevel": "Verbose"
+}

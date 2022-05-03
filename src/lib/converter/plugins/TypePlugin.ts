@@ -3,25 +3,26 @@ import {
     DeclarationReflection,
     DeclarationHierarchy,
 } from "../../models/reflections/index";
-import { Type, ReferenceType } from "../../models/types/index";
+import { Type, ReferenceType } from "../../models/types";
 import { Component, ConverterComponent } from "../components";
 import { Converter } from "../converter";
-import { Context } from "../context";
+import type { Context } from "../context";
 
 /**
- * A handler that converts all instances of [[LateResolvingType]] to their renderable equivalents.
+ * A handler that converts all instances of {@link LateResolvingType} to their renderable equivalents.
  */
 @Component({ name: "type" })
 export class TypePlugin extends ConverterComponent {
-    reflections: DeclarationReflection[] = [];
+    reflections = new Set<DeclarationReflection>();
 
     /**
      * Create a new TypeHandler instance.
      */
-    initialize() {
+    override initialize() {
         this.listenTo(this.owner, {
             [Converter.EVENT_RESOLVE]: this.onResolve,
             [Converter.EVENT_RESOLVE_END]: this.onResolveEnd,
+            [Converter.EVENT_END]: () => this.reflections.clear(),
         });
     }
 
@@ -41,7 +42,7 @@ export class TypePlugin extends ConverterComponent {
                     target.implementedBy = [];
                 }
                 target.implementedBy.push(
-                    new ReferenceType(
+                    ReferenceType.createResolvedReference(
                         reflection.name,
                         reflection,
                         context.project
@@ -55,7 +56,7 @@ export class TypePlugin extends ConverterComponent {
                     target.extendedBy = [];
                 }
                 target.extendedBy.push(
-                    new ReferenceType(
+                    ReferenceType.createResolvedReference(
                         reflection.name,
                         reflection,
                         context.project
@@ -87,9 +88,7 @@ export class TypePlugin extends ConverterComponent {
     }
 
     private postpone(reflection: DeclarationReflection) {
-        if (!this.reflections.includes(reflection)) {
-            this.reflections.push(reflection);
-        }
+        this.reflections.add(reflection);
     }
 
     /**
@@ -98,11 +97,11 @@ export class TypePlugin extends ConverterComponent {
     private onResolveEnd(context: Context) {
         this.reflections.forEach((reflection) => {
             if (reflection.implementedBy) {
-                reflection.implementedBy.sort((a: any, b: any) => {
-                    if (a["name"] === b["name"]) {
+                reflection.implementedBy.sort((a, b) => {
+                    if (a.name === b.name) {
                         return 0;
                     }
-                    return a["name"] > b["name"] ? 1 : -1;
+                    return a.name > b.name ? 1 : -1;
                 });
             }
 
@@ -135,7 +134,11 @@ export class TypePlugin extends ConverterComponent {
             }
 
             push([
-                new ReferenceType(reflection.name, reflection, context.project),
+                ReferenceType.createResolvedReference(
+                    reflection.name,
+                    reflection,
+                    context.project
+                ),
             ]);
             hierarchy.isTarget = true;
 

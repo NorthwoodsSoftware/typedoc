@@ -2,6 +2,7 @@ import * as ts from "typescript";
 import * as assert from "assert";
 import {
     DeclarationReflection,
+    IntrinsicType,
     ParameterReflection,
     PredicateType,
     Reflection,
@@ -10,7 +11,7 @@ import {
     SignatureReflection,
     TypeParameterReflection,
 } from "../../models";
-import { Context } from "../context";
+import type { Context } from "../context";
 import { ConverterEvents } from "../converter-events";
 import { convertDefaultValue } from "../convert-expression";
 import { removeUndefined } from "../utils/reflections";
@@ -57,16 +58,23 @@ export function createSignature(
         signature.typeParameters
     );
 
+    const parameterSymbols: ReadonlyArray<ts.Symbol & { type?: ts.Type }> =
+        signature.thisParameter
+            ? [signature.thisParameter, ...signature.parameters]
+            : signature.parameters;
+
     sigRef.parameters = convertParameters(
         context,
         sigRef,
-        signature.parameters as readonly (ts.Symbol & { type: ts.Type })[],
+        parameterSymbols,
         declaration?.parameters
     );
 
     const predicate = context.checker.getTypePredicateOfSignature(signature);
     if (predicate) {
         sigRef.type = convertPredicate(predicate, context.withScope(sigRef));
+    } else if (kind == ReflectionKind.SetSignature) {
+        sigRef.type = new IntrinsicType("void");
     } else {
         sigRef.type = context.converter.convertType(
             context.withScope(sigRef),
@@ -102,7 +110,7 @@ export function createSignature(
 function convertParameters(
     context: Context,
     sigRef: SignatureReflection,
-    parameters: readonly (ts.Symbol & { type: ts.Type })[],
+    parameters: ReadonlyArray<ts.Symbol & { type?: ts.Type }>,
     parameterNodes: readonly ts.ParameterDeclaration[] | undefined
 ) {
     return parameters.map((param, i) => {
@@ -126,15 +134,8 @@ function convertParameters(
             declaration
         );
 
-        let type: ts.Type | ts.TypeNode;
-        if (
-            declaration &&
-            ts.isParameter(declaration) &&
-            ts.isFunctionDeclaration(declaration.parent) &&
-            declaration.type
-        ) {
-            type = declaration.type;
-        } else if (declaration) {
+        let type: ts.Type | ts.TypeNode | undefined;
+        if (declaration) {
             type = context.checker.getTypeOfSymbolAtLocation(
                 param,
                 declaration
@@ -241,7 +242,7 @@ function convertTypeParameters(
             defaultType,
             parent
         );
-        context.registerReflection(paramRefl, undefined);
+        context.registerReflection(paramRefl, param.getSymbol());
         context.trigger(ConverterEvents.CREATE_TYPE_PARAMETER, paramRefl);
 
         return paramRefl;
@@ -265,7 +266,7 @@ export function convertTypeParameterNodes(
             defaultType,
             context.scope
         );
-        context.registerReflection(paramRefl, undefined);
+        context.registerReflection(paramRefl, param.symbol);
         context.trigger(
             ConverterEvents.CREATE_TYPE_PARAMETER,
             paramRefl,

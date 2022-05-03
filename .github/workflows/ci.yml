@@ -5,7 +5,9 @@ jobs:
         runs-on: ubuntu-latest
         strategy:
             matrix:
-                node: ["10", "12", "14"]
+                # ESLint doesn't support Node 12.10 anymore. Test on the oldest available
+                # node that our tools support.
+                node: ["12.22", "12", "14", "16"]
         name: Node ${{ matrix.node }}
         steps:
             - name: Checkout repository
@@ -21,7 +23,11 @@ jobs:
             - name: Build
               run: npm run build
             - name: Test
-              run: npm test
+              run: npm run test:full
+              env:
+                  # For pull requests, this gets handled by the visual-regression workflow.
+                  # For other test runs, skip so we don't have to go build the regression screenshots.
+                  SKIP_VISUAL_TEST: true
             - name: Lint
               run: npm run lint
             - name: Circular dependency check

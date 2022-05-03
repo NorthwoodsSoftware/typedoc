@@ -1,8 +1,7 @@
 export { CategoryPlugin } from "./CategoryPlugin";
 export { CommentPlugin } from "./CommentPlugin";
 export { DecoratorPlugin } from "./DecoratorPlugin";
-export { DeepCommentPlugin } from "./DeepCommentPlugin";
-export { GitHubPlugin } from "./GitHubPlugin";
+export { SourceLinkPlugin } from "./SourceLinkPlugin";
 export { GroupPlugin } from "./GroupPlugin";
 export { ImplementsPlugin } from "./ImplementsPlugin";
 export { PackagePlugin } from "./PackagePlugin";

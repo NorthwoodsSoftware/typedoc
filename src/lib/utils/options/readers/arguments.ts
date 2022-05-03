@@ -1,6 +1,14 @@
-import { OptionsReader, Options } from "..";
-import { Logger } from "../../loggers";
+import { ok } from "assert";
+import type { OptionsReader, Options } from "..";
+import type { Logger } from "../../loggers";
 import { ParameterType } from "../declaration";
+
+const ARRAY_OPTION_TYPES = new Set<ParameterType | undefined>([
+    ParameterType.Array,
+    ParameterType.PathArray,
+    ParameterType.ModuleArray,
+    ParameterType.GlobArray,
+]);
 
 /**
  * Obtains option values from command-line arguments
@@ -28,6 +36,7 @@ export class ArgumentsReader implements OptionsReader {
             try {
                 options.setValue(name, value);
             } catch (err) {
+                ok(err instanceof Error);
                 logger.error(err.message);
             }
         };
@@ -39,14 +48,17 @@ export class ArgumentsReader implements OptionsReader {
                 : options.getDeclaration("entryPoints");
 
             if (decl) {
-                if (seen.has(decl.name) && decl.type === ParameterType.Array) {
+                if (seen.has(decl.name) && ARRAY_OPTION_TYPES.has(decl.type)) {
                     trySet(
                         decl.name,
                         (options.getValue(decl.name) as string[]).concat(
                             this.args[index]
                         )
                     );
-                } else if (decl.type === ParameterType.Boolean) {
+                } else if (
+                    decl.type === ParameterType.Boolean ||
+                    decl.type === ParameterType.Flags
+                ) {
                     const value = String(this.args[index]).toLowerCase();
 
                     if (value === "true" || value === "false") {
@@ -66,10 +78,32 @@ export class ArgumentsReader implements OptionsReader {
                     trySet(decl.name, this.args[index]);
                 }
                 seen.add(decl.name);
-            } else {
-                logger.error(`Unknown option: ${name}`);
+                index++;
+                continue;
             }
 
+            if (name.includes(".")) {
+                const actualName = name.split(".")[0].replace(/^--?/, "");
+                const decl = options.getDeclaration(actualName);
+
+                if (decl && decl.type === ParameterType.Flags) {
+                    const flagName = name.split(".", 2)[1];
+                    const value = String(this.args[index]).toLowerCase();
+
+                    if (value === "true" || value === "false") {
+                        trySet(decl.name, { [flagName]: value === "true" });
+                    } else {
+                        trySet(decl.name, { [flagName]: true });
+                        // Bool option didn't consume the next argument as expected.
+                        index--;
+                    }
+
+                    index++;
+                    continue;
+                }
+            }
+
+            logger.error(`Unknown option: ${name}`);
             index++;
         }
     }

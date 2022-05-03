@@ -1,13 +1,8 @@
-import {
-    Reflection,
-    ReflectionKind,
-    TraverseCallback,
-    TraverseProperty,
-} from "./abstract";
-import { ReflectionCategory } from "../ReflectionCategory";
-import { ReflectionGroup } from "../ReflectionGroup";
-import { DeclarationReflection } from "./declaration";
-import { toArray } from "lodash";
+import { Reflection, TraverseCallback, TraverseProperty } from "./abstract";
+import type { ReflectionCategory } from "../ReflectionCategory";
+import type { ReflectionGroup } from "../ReflectionGroup";
+import type { DeclarationReflection } from "./declaration";
+import type { ReflectionKind } from "./kind";
 
 export class ContainerReflection extends Reflection {
     /**
@@ -43,8 +38,8 @@ export class ContainerReflection extends Reflection {
      *
      * @param callback  The callback function that should be applied for each child reflection.
      */
-    traverse(callback: TraverseCallback) {
-        for (const child of toArray(this.children)) {
+    override traverse(callback: TraverseCallback) {
+        for (const child of this.children?.slice() || []) {
             if (callback(child, TraverseProperty.Children) === false) {
                 return;
             }

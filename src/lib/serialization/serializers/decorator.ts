@@ -1,12 +1,12 @@
 import { SerializerComponent } from "../components";
 import { DecoratorWrapper } from "./models/decorator-wrapper";
-import { Decorator } from "../schema";
+import type { Decorator } from "../schema";
 
 export class DecoratorContainerSerializer extends SerializerComponent<DecoratorWrapper> {
-    static PRIORITY = 1000;
+    static override PRIORITY = 1000;
 
     /**
-     * Filter for instances of [[DecoratorWrapper]]
+     * Filter for instances of {@link DecoratorWrapper}
      */
     serializeGroup(instance: unknown): boolean {
         return instance instanceof DecoratorWrapper;

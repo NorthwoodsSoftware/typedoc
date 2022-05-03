@@ -262,19 +262,20 @@ export class LegendBuilder {
 /**
  * A plugin that generates the legend for the current page.
  *
- * This plugin sets the [[PageEvent.legend]] property.
+ * This plugin sets the {@link PageEvent.legend} property.
  */
 @Component({ name: "legend" })
 export class LegendPlugin extends RendererComponent {
-    private _project!: ProjectReflection;
+    private _project?: ProjectReflection;
 
     /**
      * Create a new LegendPlugin instance.
      */
-    initialize() {
+    override initialize() {
         this.listenTo(this.owner, {
             [RendererEvent.BEGIN]: this.onRenderBegin,
             [PageEvent.BEGIN]: this.onRendererBeginPage,
+            [RendererEvent.END]: () => (this._project = void 0),
         });
     }
 
@@ -287,7 +288,7 @@ export class LegendPlugin extends RendererComponent {
      *
      * @param page  An event object describing the current render operation.
      */
-    private onRendererBeginPage(page: PageEvent) {
+    private onRendererBeginPage(page: PageEvent<Reflection>) {
         const model = page.model;
         const builder = new LegendBuilder();
 
@@ -295,7 +296,7 @@ export class LegendPlugin extends RendererComponent {
         this.buildLegend(model, builder);
 
         // top level items (as appears in navigation)
-        this._project.children?.forEach((reflection) => {
+        this._project?.children?.forEach((reflection) => {
             if (reflection !== model) {
                 this.buildLegend(reflection, builder);
             }

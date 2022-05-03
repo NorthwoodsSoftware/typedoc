@@ -1,9 +1,9 @@
 import { Event } from "../utils/events";
-import { ProjectReflection } from "../models";
-import { ProjectReflection as JSONProjectReflection } from "./schema";
+import type { ProjectReflection } from "../models";
+import type { ProjectReflection as JSONProjectReflection } from "./schema";
 
 /**
- * Optional data associated with the [[SerializeEvent]].
+ * Optional data associated with the {@link SerializeEvent}.
  */
 export interface SerializeEventData {
     outputDirectory?: string;
@@ -11,11 +11,11 @@ export interface SerializeEventData {
 }
 
 /**
- * An event emitted by the [[Serializer]] class at the very beginning and
+ * An event emitted by the {@link Serializer} class at the very beginning and
  * ending of the a project serialization process.
  *
- * @see [[Serializer.EVENT_BEGIN]]
- * @see [[Serializer.EVENT_END]]
+ * @see {@link Serializer.EVENT_BEGIN}
+ * @see {@link Serializer.EVENT_END}
  */
 export class SerializeEvent extends Event {
     /**

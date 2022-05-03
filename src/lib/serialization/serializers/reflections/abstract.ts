@@ -5,7 +5,7 @@ import { DecoratorWrapper } from "../models";
 import type { Reflection as JSONReflection } from "../../schema";
 
 export class ReflectionSerializer extends ReflectionSerializerComponent<Reflection> {
-    static PRIORITY = 1000;
+    static override PRIORITY = 1000;
 
     supports(t: unknown) {
         return t instanceof Reflection;
@@ -44,7 +44,6 @@ export class ReflectionSerializer extends ReflectionSerializerComponent<Reflecti
             "hasExportAssignment",
             "isAbstract",
             "isConst",
-            "isLet",
             "isReadonly",
             "isVirtual",
             "isOverride",

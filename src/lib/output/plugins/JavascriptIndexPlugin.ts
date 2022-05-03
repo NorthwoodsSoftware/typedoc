@@ -7,8 +7,9 @@ import {
     ReflectionKind,
 } from "../../models/reflections/index";
 import { Component, RendererComponent } from "../components";
-import { writeFile } from "../../utils/fs";
 import { RendererEvent } from "../events";
+import { writeFileSync } from "../../utils";
+import { DefaultTheme } from "../themes/default/DefaultTheme";
 
 /**
  * A plugin that exports an index of the project to a javascript file.
@@ -20,7 +21,7 @@ export class JavascriptIndexPlugin extends RendererComponent {
     /**
      * Create a new JavascriptIndexPlugin instance.
      */
-    initialize() {
+    override initialize() {
         this.listenTo(this.owner, RendererEvent.BEGIN, this.onRendererBegin);
     }
 
@@ -30,6 +31,13 @@ export class JavascriptIndexPlugin extends RendererComponent {
      * @param event  An event object describing the current render operation.
      */
     private onRendererBegin(event: RendererEvent) {
+        if (!(this.owner.theme instanceof DefaultTheme)) {
+            return;
+        }
+        if (event.isDefaultPrevented) {
+            return;
+        }
+
         const rows: any[] = [];
 
         for (const reflection of event.project.getReflectionsByKind(
@@ -88,7 +96,6 @@ export class JavascriptIndexPlugin extends RendererComponent {
         const jsonFileName = Path.join(
             event.outputDirectory,
             "assets",
-            "js",
             "search.js"
         );
         const jsonData = JSON.stringify({
@@ -96,7 +103,10 @@ export class JavascriptIndexPlugin extends RendererComponent {
             index,
         });
 
-        writeFile(jsonFileName, `/* Copyright (C) 1998-2021 by Northwoods Software Corporation. All Rights Reserved. */
-        window.searchData = ${jsonData}`, false);
+        writeFileSync(
+            jsonFileName,
+            `/* Copyright (C) 1998-2021 by Northwoods Software Corporation. All Rights Reserved. */
+            window.searchData = JSON.parse(${JSON.stringify(jsonData)});`
+        );
     }
 }

@@ -1,21 +1,14 @@
-import { Type, ReflectionType } from "../types/index";
-import {
-    Reflection,
-    DefaultValueContainer,
-    TypeContainer,
-    TraverseCallback,
-    TraverseProperty,
-} from "./abstract";
-import { SignatureReflection } from "./signature";
+import type { SomeType } from "..";
+import { ReflectionType } from "../types";
+import { Reflection, TraverseCallback, TraverseProperty } from "./abstract";
+import type { SignatureReflection } from "./signature";
 
-export class ParameterReflection
-    extends Reflection
-    implements DefaultValueContainer, TypeContainer {
-    parent?: SignatureReflection;
+export class ParameterReflection extends Reflection {
+    override parent?: SignatureReflection;
 
     defaultValue?: string;
 
-    type?: Type;
+    type?: SomeType;
 
     /**
      * Traverse all potential child reflections of this reflection.
@@ -25,7 +18,7 @@ export class ParameterReflection
      *
      * @param callback  The callback function that should be applied for each child reflection.
      */
-    traverse(callback: TraverseCallback) {
+    override traverse(callback: TraverseCallback) {
         if (this.type instanceof ReflectionType) {
             if (
                 callback(
@@ -43,7 +36,7 @@ export class ParameterReflection
     /**
      * Return a string representation of this reflection.
      */
-    toString() {
+    override toString() {
         return super.toString() + (this.type ? ":" + this.type.toString() : "");
     }
 }

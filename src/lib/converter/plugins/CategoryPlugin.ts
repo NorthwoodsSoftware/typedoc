@@ -8,9 +8,9 @@ import {
 import { ReflectionCategory } from "../../models/ReflectionCategory";
 import { Component, ConverterComponent } from "../components";
 import { Converter } from "../converter";
-import { Context } from "../context";
+import type { Context } from "../context";
 import { BindOption } from "../../utils";
-import { Comment } from "../../models/comments/index";
+import type { Comment } from "../../models/comments/index";
 
 /**
  * A handler that sorts and categorizes the found reflections in the resolving phase.
@@ -35,7 +35,7 @@ export class CategoryPlugin extends ConverterComponent {
     /**
      * Create a new CategoryPlugin instance.
      */
-    initialize() {
+    override initialize() {
         this.listenTo(
             this.owner,
             {
@@ -136,7 +136,7 @@ export class CategoryPlugin extends ConverterComponent {
      * @returns An array containing all children of the given reflection categorized
      */
     static getReflectionCategories(
-        reflections: Reflection[]
+        reflections: DeclarationReflection[]
     ): ReflectionCategory[] {
         const categories: ReflectionCategory[] = [];
         let defaultCat: ReflectionCategory | undefined;
@@ -184,9 +184,11 @@ export class CategoryPlugin extends ConverterComponent {
      * @param reflection The reflection.
      * @returns The category the reflection belongs to
      */
-    static getCategories(reflection: Reflection) {
-        function extractCategoryTag(comment: Comment) {
+    static getCategories(reflection: DeclarationReflection) {
+        function extractCategoryTag(comment: Comment | undefined) {
             const categories = new Set<string>();
+            if (!comment) return categories;
+
             const tags = comment.tags;
             const commentTags: CommentTag[] = [];
             tags.forEach((tag) => {
@@ -204,22 +206,25 @@ export class CategoryPlugin extends ConverterComponent {
             return categories;
         }
 
-        const categories = new Set<string>();
+        let categories = new Set<string>();
 
         if (reflection.comment) {
-            return extractCategoryTag(reflection.comment);
-        } else if (
-            reflection instanceof DeclarationReflection &&
-            reflection.signatures
-        ) {
+            categories = extractCategoryTag(reflection.comment);
+        } else if (reflection.signatures) {
             for (const sig of reflection.signatures) {
-                for (const cat of sig.comment
-                    ? extractCategoryTag(sig.comment)
-                    : []) {
+                for (const cat of extractCategoryTag(sig.comment)) {
                     categories.add(cat);
                 }
             }
         }
+
+        if (reflection.type?.type === "reflection") {
+            reflection.type.declaration.comment?.removeTags("category");
+            reflection.type.declaration.signatures?.forEach((s) =>
+                s.comment?.removeTags("category")
+            );
+        }
+
         return categories;
     }
 

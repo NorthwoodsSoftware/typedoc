@@ -1,13 +1,13 @@
 import { CommentTag } from "../../../models";
 
 import { SerializerComponent } from "../../components";
-import { CommentTag as JSONCommentTag } from "../../schema";
+import type { CommentTag as JSONCommentTag } from "../../schema";
 
 export class CommentTagSerializer extends SerializerComponent<CommentTag> {
-    static PRIORITY = 1000;
+    static override PRIORITY = 1000;
 
     /**
-     * Filter for instances of [[CommentTag]]
+     * Filter for instances of {@link CommentTag}
      */
     serializeGroup(instance: unknown): boolean {
         return instance instanceof CommentTag;

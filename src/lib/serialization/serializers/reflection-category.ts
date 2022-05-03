@@ -1,13 +1,13 @@
 import { ReflectionCategory } from "../../models/ReflectionCategory";
 
 import { SerializerComponent } from "../components";
-import { ReflectionCategory as JSONReflectionCategory } from "../schema";
+import type { ReflectionCategory as JSONReflectionCategory } from "../schema";
 
 export class ReflectionCategorySerializer extends SerializerComponent<ReflectionCategory> {
-    static PRIORITY = 1000;
+    static override PRIORITY = 1000;
 
     /**
-     * Filter for instances of [[ReflectionCategory]]
+     * Filter for instances of {@link ReflectionCategory}
      */
     serializeGroup(instance: unknown): boolean {
         return instance instanceof ReflectionCategory;

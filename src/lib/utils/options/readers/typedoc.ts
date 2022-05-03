@@ -1,10 +1,10 @@
-import * as Path from "path";
+import { join, dirname, resolve } from "path";
 import * as FS from "fs";
-import { cloneDeep } from "lodash";
 
-import { OptionsReader } from "..";
-import { Logger } from "../../loggers";
-import { Options } from "../options";
+import type { OptionsReader } from "..";
+import type { Logger } from "../../loggers";
+import type { Options } from "../options";
+import { ok } from "assert";
 
 /**
  * Obtains option values from typedoc.json
@@ -69,7 +69,7 @@ export class TypeDocReader implements OptionsReader {
         }
 
         // clone option object to avoid of property changes in re-calling this file
-        const data: any = cloneDeep(fileContent);
+        const data: any = { ...fileContent };
         delete data["$schema"]; // Useful for better autocompletion, should not be read as a key.
 
         if ("extends" in data) {
@@ -77,7 +77,7 @@ export class TypeDocReader implements OptionsReader {
             for (const extendedFile of extended) {
                 // Extends is relative to the file it appears in.
                 this.readFile(
-                    Path.resolve(Path.dirname(file), extendedFile),
+                    resolve(dirname(file), extendedFile),
                     container,
                     logger,
                     seen
@@ -88,8 +88,13 @@ export class TypeDocReader implements OptionsReader {
 
         for (const [key, val] of Object.entries(data)) {
             try {
-                container.setValue(key, val);
+                container.setValue(
+                    key as never,
+                    val as never,
+                    resolve(dirname(file))
+                );
             } catch (error) {
+                ok(error instanceof Error);
                 logger.error(error.message);
             }
         }
@@ -104,12 +109,12 @@ export class TypeDocReader implements OptionsReader {
      * @return the typedoc.(js|json) file path or undefined
      */
     private findTypedocFile(path: string): string | undefined {
-        path = Path.resolve(path);
+        path = resolve(path);
 
         return [
             path,
-            Path.join(path, "typedoc.json"),
-            Path.join(path, "typedoc.js"),
+            join(path, "typedoc.json"),
+            join(path, "typedoc.js"),
         ].find((path) => FS.existsSync(path) && FS.statSync(path).isFile());
     }
 }

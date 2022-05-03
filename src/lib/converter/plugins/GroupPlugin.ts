@@ -5,10 +5,12 @@ import {
     DeclarationReflection,
 } from "../../models/reflections/index";
 import { ReflectionGroup } from "../../models/ReflectionGroup";
-import { SourceDirectory } from "../../models/sources/directory";
+import type { SourceDirectory } from "../../models/sources/directory";
 import { Component, ConverterComponent } from "../components";
 import { Converter } from "../converter";
-import { Context } from "../context";
+import type { Context } from "../context";
+import { sortReflections, SortStrategy } from "../../utils/sort";
+import { BindOption } from "../../utils";
 
 /**
  * A handler that sorts and groups the found reflections in the resolving phase.
@@ -17,39 +19,6 @@ import { Context } from "../context";
  */
 @Component({ name: "group" })
 export class GroupPlugin extends ConverterComponent {
-    /**
-     * Define the sort order of reflections.
-     */
-    static WEIGHTS = [
-        ReflectionKind.Project,
-        ReflectionKind.Module,
-        ReflectionKind.Namespace,
-        ReflectionKind.Enum,
-        ReflectionKind.EnumMember,
-        ReflectionKind.Class,
-        ReflectionKind.Interface,
-        ReflectionKind.TypeAlias,
-
-        ReflectionKind.Constructor,
-        ReflectionKind.Event,
-        ReflectionKind.Variable,
-        ReflectionKind.Function,
-        ReflectionKind.Accessor,
-        ReflectionKind.Property,
-        ReflectionKind.Method,
-        ReflectionKind.Constant,
-        ReflectionKind.ObjectLiteral,
-        
-        ReflectionKind.Parameter,
-        ReflectionKind.TypeParameter,
-        ReflectionKind.TypeLiteral,
-        ReflectionKind.CallSignature,
-        ReflectionKind.ConstructorSignature,
-        ReflectionKind.IndexSignature,
-        ReflectionKind.GetSignature,
-        ReflectionKind.SetSignature,
-    ];
-
     /**
      * Define the singular name of individual reflection kinds.
      */
@@ -71,10 +40,14 @@ export class GroupPlugin extends ConverterComponent {
         [ReflectionKind.Constant]: "Constants"
     };
 
+    /** @internal */
+    @BindOption("sort")
+    sortStrategies!: SortStrategy[];
+
     /**
      * Create a new GroupPlugin instance.
      */
-    initialize() {
+    override initialize() {
         this.listenTo(this.owner, {
             [Converter.EVENT_RESOLVE]: this.onResolve,
             [Converter.EVENT_RESOLVE_END]: this.onEndResolve,
@@ -126,7 +99,7 @@ export class GroupPlugin extends ConverterComponent {
             reflection.children.length > 0 &&
             !reflection.groups
         ) {
-            reflection.children.sort(GroupPlugin.sortCallback);
+            sortReflections(reflection.children, this.sortStrategies);
             reflection.groups = GroupPlugin.getReflectionGroups(
                 reflection.children
             );
@@ -141,7 +114,9 @@ export class GroupPlugin extends ConverterComponent {
      * @param reflections  The reflections that should be grouped.
      * @returns An array containing all children of the given reflection grouped by their kind.
      */
-    static getReflectionGroups(reflections: Reflection[]): ReflectionGroup[] {
+    static getReflectionGroups(
+        reflections: DeclarationReflection[]
+    ): ReflectionGroup[] {
         const groups: ReflectionGroup[] = [];
         reflections.forEach((child) => {
             for (let i = 0; i < groups.length; i++) {
@@ -235,33 +210,6 @@ export class GroupPlugin extends ConverterComponent {
             ];
         } else {
             return this.getKindString(kind) + "s";
-        }
-    }
-
-    /**
-     * Callback used to sort reflections by weight defined by ´GroupPlugin.WEIGHTS´ and name.
-     *
-     * @param a The left reflection to sort.
-     * @param b The right reflection to sort.
-     * @returns The sorting weight.
-     */
-    static sortCallback(a: Reflection, b: Reflection): number {
-        const aWeight = GroupPlugin.WEIGHTS.indexOf(a.kind);
-        const bWeight = GroupPlugin.WEIGHTS.indexOf(b.kind);
-        if (aWeight === bWeight) {
-            if (a.name === b.name) {
-                // Same name? Instance first
-                if (a.flags.isStatic && !b.flags.isStatic) {
-                    return 1;
-                }
-                if (!a.flags.isStatic && b.flags.isStatic) {
-                    return -1;
-                }
-                return 0;
-            }
-            return a.name > b.name ? 1 : -1;
-        } else {
-            return aWeight - bWeight;
         }
     }
 }

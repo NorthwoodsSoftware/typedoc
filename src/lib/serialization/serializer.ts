@@ -1,20 +1,20 @@
 import { EventDispatcher } from "../utils";
-import { ProjectReflection } from "../models";
+import type { ProjectReflection } from "../models";
 
-import { SerializerComponent } from "./components";
+import type { SerializerComponent } from "./components";
 import { SerializeEvent, SerializeEventData } from "./events";
-import { ModelToObject } from "./schema";
+import type { ModelToObject } from "./schema";
 import * as S from "./serializers";
 
 export class Serializer extends EventDispatcher {
     /**
-     * Triggered when the [[Serializer]] begins transforming a project.
+     * Triggered when the {@link Serializer} begins transforming a project.
      * @event EVENT_BEGIN
      */
     static EVENT_BEGIN = "begin";
 
     /**
-     * Triggered when the [[Serializer]] has finished transforming a project.
+     * Triggered when the {@link Serializer} has finished transforming a project.
      * @event EVENT_END
      */
     static EVENT_END = "end";
@@ -66,7 +66,7 @@ export class Serializer extends EventDispatcher {
     }
 
     /**
-     * Same as toObject but emits [[ Serializer#EVENT_BEGIN ]] and [[ Serializer#EVENT_END ]] events.
+     * Same as toObject but emits {@link Serializer.EVENT_BEGIN} and {@link Serializer.EVENT_END} events.
      * @param value
      * @param eventData Partial information to set in the event
      */
@@ -154,7 +154,6 @@ const serializerComponents: (new (
     S.NamedTupleMemberTypeSerializer,
     S.MappedTypeSerializer,
     S.TypeOperatorTypeSerializer,
-    S.TypeParameterTypeSerializer,
     S.UnionTypeSerializer,
     S.UnknownTypeSerializer,
 

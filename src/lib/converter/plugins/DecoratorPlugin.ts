@@ -1,25 +1,22 @@
 import * as ts from "typescript";
 
-import { ReferenceType } from "../../models/types/index";
-import { Reflection, Decorator } from "../../models/reflections/index";
+import { ReferenceType } from "../../models/types";
+import type { Reflection, Decorator } from "../../models/reflections/index";
 import { Component, ConverterComponent } from "../components";
 import { Converter } from "../converter";
-import { Context } from "../context";
+import type { Context } from "../context";
 
 /**
  * A plugin that detects decorators.
  */
 @Component({ name: "decorator" })
 export class DecoratorPlugin extends ConverterComponent {
-    /**
-     * Defined in this.onBegin
-     */
     private readonly usages = new Map<ts.Symbol, ReferenceType[]>();
 
     /**
      * Create a new ImplementsPlugin instance.
      */
-    initialize() {
+    override initialize() {
         this.listenTo(this.owner, {
             [Converter.EVENT_CREATE_DECLARATION]: this.onDeclaration,
             [Converter.EVENT_CREATE_PARAMETER]: this.onDeclaration,
@@ -89,16 +86,15 @@ export class DecoratorPlugin extends ConverterComponent {
 
             const type = context.checker.getTypeAtLocation(identifier);
             if (type && type.symbol) {
-                info.type = new ReferenceType(
-                    info.name,
+                info.type = ReferenceType.createSymbolReference(
                     context.resolveAliasedSymbol(type.symbol),
-                    context.project
+                    context,
+                    info.name
                 );
 
                 if (callExpression && callExpression.arguments) {
-                    const signature = context.checker.getResolvedSignature(
-                        callExpression
-                    );
+                    const signature =
+                        context.checker.getResolvedSignature(callExpression);
                     if (signature) {
                         info.arguments = this.extractArguments(
                             callExpression.arguments,
@@ -109,7 +105,7 @@ export class DecoratorPlugin extends ConverterComponent {
 
                 const usages = this.usages.get(type.symbol) ?? [];
                 usages.push(
-                    new ReferenceType(
+                    ReferenceType.createResolvedReference(
                         reflection.name,
                         reflection,
                         context.project

@@ -9,7 +9,7 @@ import {
 import { SourceDirectory, SourceFile } from "../../models/sources/index";
 import { Component, ConverterComponent } from "../components";
 import { Converter } from "../converter";
-import { Context } from "../context";
+import type { Context } from "../context";
 import { BindOption } from "../../utils";
 import { isNamedNode } from "../utils/nodes";
 import { getCommonDirectory, normalizePath } from "../../utils/fs";
@@ -25,7 +25,7 @@ export class SourcePlugin extends ConverterComponent {
     readonly disableSources!: boolean;
 
     /**
-     * A map of all generated [[SourceFile]] instances.
+     * A map of all generated {@link SourceFile} instances.
      */
     private fileMappings: { [name: string]: SourceFile } = {};
 
@@ -38,9 +38,9 @@ export class SourcePlugin extends ConverterComponent {
     /**
      * Create a new SourceHandler instance.
      */
-    initialize() {
+    override initialize() {
         this.listenTo(this.owner, {
-            [Converter.EVENT_BEGIN]: this.onBegin,
+            [Converter.EVENT_END]: this.onEnd,
             [Converter.EVENT_CREATE_DECLARATION]: this.onDeclaration,
             [Converter.EVENT_CREATE_SIGNATURE]: this.onDeclaration,
             [Converter.EVENT_RESOLVE_BEGIN]: this.onBeginResolve,
@@ -62,20 +62,16 @@ export class SourcePlugin extends ConverterComponent {
         return this.fileMappings[fileName];
     }
 
-    /**
-     * Triggered once per project before the dispatcher invokes the compiler.
-     *
-     * @param event  An event object containing the related project and compiler instance.
-     */
-    private onBegin() {
-        this.fileNames.clear();
+    private onEnd() {
         this.fileMappings = {};
+        this.fileNames.clear();
+        this.basePath = void 0;
     }
 
     /**
      * Triggered when the converter has created a declaration reflection.
      *
-     * Attach the current source file to the [[DeclarationReflection.sources]] array.
+     * Attach the current source file to the {@link DeclarationReflection.sources} array.
      *
      * @param context  The context object describing the current state the converter is in.
      * @param reflection  The reflection that is currently processed.
@@ -98,10 +94,13 @@ export class SourcePlugin extends ConverterComponent {
         if (isNamedNode(node)) {
             position = ts.getLineAndCharacterOfPosition(
                 sourceFile,
-                node.name.end
+                node.name.getStart()
             );
         } else {
-            position = ts.getLineAndCharacterOfPosition(sourceFile, node.pos);
+            position = ts.getLineAndCharacterOfPosition(
+                sourceFile,
+                node.getStart()
+            );
         }
 
         if (reflection instanceof DeclarationReflection) {
@@ -159,7 +158,7 @@ export class SourcePlugin extends ConverterComponent {
         const project = context.project;
         const home = project.directory;
         project.files.forEach((file) => {
-            const reflections: Reflection[] = [];
+            const reflections: DeclarationReflection[] = [];
             file.reflections.forEach((reflection) => {
                 reflections.push(reflection);
             });
@@ -184,7 +183,6 @@ export class SourcePlugin extends ConverterComponent {
             }
 
             directory.files.push(file);
-            // reflections.sort(GroupHandler.sortCallback);
             file.parent = directory;
             file.reflections = reflections;
         });

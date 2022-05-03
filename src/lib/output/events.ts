@@ -1,29 +1,22 @@
-import { TemplateDelegate } from "handlebars";
 import * as Path from "path";
 
 import { Event } from "../utils/events";
-import { ProjectReflection } from "../models/reflections/project";
-import { UrlMapping } from "./models/UrlMapping";
-import { NavigationItem } from "./models/NavigationItem";
-import { LegendItem } from "./plugins/LegendPlugin";
+import type { ProjectReflection } from "../models/reflections/project";
+import type { RenderTemplate, UrlMapping } from "./models/UrlMapping";
+import type { LegendItem } from "./plugins/LegendPlugin";
 
 /**
- * An event emitted by the [[Renderer]] class at the very beginning and
+ * An event emitted by the {@link Renderer} class at the very beginning and
  * ending of the entire rendering process.
  *
- * @see [[Renderer.EVENT_BEGIN]]
- * @see [[Renderer.EVENT_END]]
+ * @see {@link Renderer.EVENT_BEGIN}
+ * @see {@link Renderer.EVENT_END}
  */
 export class RendererEvent extends Event {
     /**
      * The project the renderer is currently processing.
      */
     readonly project: ProjectReflection;
-
-    /**
-     * The settings that have been passed to TypeDoc.
-     */
-    settings: any;
 
     /**
      * The path of the directory the documentation should be written to.
@@ -33,7 +26,7 @@ export class RendererEvent extends Event {
     /**
      * A list of all pages that should be generated.
      *
-     * This list can be altered during the [[Renderer.EVENT_BEGIN]] event.
+     * This list can be altered during the {@link Renderer.EVENT_BEGIN} event.
      */
     urls?: UrlMapping[];
 
@@ -41,13 +34,13 @@ export class RendererEvent extends Event {
      * Triggered before the renderer starts rendering a project.
      * @event
      */
-    static BEGIN = "beginRender";
+    static readonly BEGIN = "beginRender";
 
     /**
      * Triggered after the renderer has written all documents.
      * @event
      */
-    static END = "endRender";
+    static readonly END = "endRender";
 
     constructor(
         name: string,
@@ -60,43 +53,37 @@ export class RendererEvent extends Event {
     }
 
     /**
-     * Create an [[PageEvent]] event based on this event and the given url mapping.
+     * Create an {@link PageEvent} event based on this event and the given url mapping.
      *
      * @internal
-     * @param mapping  The mapping that defines the generated [[PageEvent]] state.
-     * @returns A newly created [[PageEvent]] instance.
+     * @param mapping  The mapping that defines the generated {@link PageEvent} state.
+     * @returns A newly created {@link PageEvent} instance.
      */
-    public createPageEvent(mapping: UrlMapping): PageEvent {
-        const event = new PageEvent(PageEvent.BEGIN);
+    public createPageEvent<Model>(
+        mapping: UrlMapping<Model>
+    ): PageEvent<Model> {
+        const event = new PageEvent<Model>(PageEvent.BEGIN);
         event.project = this.project;
-        event.settings = this.settings;
         event.url = mapping.url;
         event.model = mapping.model;
-        event.templateName = mapping.template;
+        event.template = mapping.template;
         event.filename = Path.join(this.outputDirectory, mapping.url);
         return event;
     }
 }
 
 /**
- * An event emitted by the [[Renderer]] class before and after the
+ * An event emitted by the {@link Renderer} class before and after the
  * markup of a page is rendered.
  *
- * This object will be passed as the rendering context to handlebars templates.
- *
- * @see [[Renderer.EVENT_BEGIN_PAGE]]
- * @see [[Renderer.EVENT_END_PAGE]]
+ * @see {@link Renderer.EVENT_BEGIN_PAGE}
+ * @see {@link Renderer.EVENT_END_PAGE}
  */
-export class PageEvent extends Event {
+export class PageEvent<Model = unknown> extends Event {
     /**
      * The project the renderer is currently processing.
      */
     project!: ProjectReflection;
-
-    /**
-     * The settings that have been passed to TypeDoc.
-     */
-    settings: any;
 
     /**
      * The filename the page will be written to.
@@ -111,37 +98,23 @@ export class PageEvent extends Event {
     /**
      * The model that should be rendered on this page.
      */
-    model: any;
+    model!: Model;
 
     /**
      * The template that should be used to render this page.
      */
-    template?: TemplateDelegate;
-
-    /**
-     * The name of the template that should be used to render this page.
-     */
-    templateName!: string;
-
-    /**
-     * The primary navigation structure of this page.
-     */
-    navigation?: NavigationItem;
-
-    /**
-     * The table of contents structure of this page.
-     */
-    toc?: NavigationItem;
+    template!: RenderTemplate<this>;
 
     /**
      * The legend items that are applicable for this page
+     * @internal this is going away. The footer will do the logic itself.
      */
     legend?: LegendItem[][];
 
     /**
      * The final html content of this page.
      *
-     * Should be rendered by layout templates and can be modifies by plugins.
+     * Should be rendered by layout templates and can be modified by plugins.
      */
     contents?: string;
 
@@ -149,20 +122,20 @@ export class PageEvent extends Event {
      * Triggered before a document will be rendered.
      * @event
      */
-    static BEGIN = "beginPage";
+    static readonly BEGIN = "beginPage";
 
     /**
      * Triggered after a document has been rendered, just before it is written to disc.
      * @event
      */
-    static END = "endPage";
+    static readonly END = "endPage";
 }
 
 /**
- * An event emitted by the [[MarkedPlugin]] on the [[Renderer]] after a chunk of
+ * An event emitted by the {@link MarkedPlugin} on the {@link Renderer} after a chunk of
  * markdown has been processed. Allows other plugins to manipulate the result.
  *
- * @see [[MarkedPlugin.EVENT_PARSE_MARKDOWN]]
+ * @see {@link MarkedPlugin.EVENT_PARSE_MARKDOWN}
  */
 export class MarkdownEvent extends Event {
     /**
@@ -179,7 +152,7 @@ export class MarkdownEvent extends Event {
      * Triggered on the renderer when this plugin parses a markdown string.
      * @event
      */
-    static PARSE = "parseMarkdown";
+    static readonly PARSE = "parseMarkdown";
 
     constructor(name: string, originalText: string, parsedText: string) {
         super(name);

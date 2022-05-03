@@ -1,6 +1,9 @@
 {
     "root": true,
     "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+        "project": "tsconfig.json"
+    },
     "env": {
         "node": true,
         "es6": true
@@ -11,8 +14,29 @@
         "plugin:@typescript-eslint/eslint-recommended",
         "plugin:@typescript-eslint/recommended"
     ],
-    "ignorePatterns": ["src/test/renderer/specs/**", "examples/**", "dist"],
+    "ignorePatterns": [
+        "src/test/renderer/specs",
+        "dist",
+        "coverage",
+        "static/main.js",
+        "src/lib/output/themes/default/assets",
+        "node_modules",
+        // Would be nice to lint these, but they shouldn't be included in the project,
+        // so we need a second eslint config file.
+        "example",
+        "src/codegen",
+        "src/test/converter",
+        "src/test/converter2",
+        "src/test/module",
+        "src/test/packages",
+        "src/test/renderer",
+        "src/test/slow/entry-points",
+        "scripts",
+        "bin"
+    ],
     "rules": {
+        "@typescript-eslint/no-floating-promises": 1,
+
         // This rule is factually incorrect. Interfaces which extend some type alias can be used to introduce
         // new type names. This is useful particularly when dealing with mixins.
         "@typescript-eslint/no-empty-interface": 0,
@@ -29,43 +53,9 @@
 
         // Feel free to turn one of these back on and submit a PR!
         "@typescript-eslint/no-non-null-assertion": 0,
-        "@typescript-eslint/explicit-module-boundary-types": 0,
-
-        "no-restricted-syntax": [
-            "error",
-            {
-                "selector": "ImportDeclaration[source.value=/^node:/]",
-                "message": "This will break on Node 10"
-            }
-        ]
+        "@typescript-eslint/explicit-module-boundary-types": 0
     },
     "overrides": [
-        {
-            "files": [
-                "src/test/converter/**",
-                "src/test/converter2/**",
-                "src/test/renderer/**"
-            ],
-            "rules": {
-                "prefer-rest-params": 0,
-                "no-inner-declarations": 0,
-                "no-var": 0,
-                "prefer-const": 0,
-                "@typescript-eslint/prefer-namespace-keyword": 0,
-                "@typescript-eslint/no-inferrable-types": 0,
-                "@typescript-eslint/explicit-module-boundary-types": 0,
-                "@typescript-eslint/no-empty-function": 0,
-                "@typescript-eslint/no-unused-vars": 0,
-                "@typescript-eslint/no-misused-new": 0
-            }
-        },
-        {
-            "files": ["scripts/**", "bin/typedoc.js"],
-            "rules": {
-                // We don't depend on a new enough version of node to use imports here...
-                "@typescript-eslint/no-var-requires": 0
-            }
-        },
         {
             "files": ["src/test/**"],
             "env": {

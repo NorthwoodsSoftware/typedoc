@@ -1,7 +1,7 @@
 import { UnionType } from "../../../models";
 
 import { TypeSerializerComponent } from "../../components";
-import { UnionType as JSONUnionType } from "../../schema";
+import type { UnionType as JSONUnionType } from "../../schema";
 
 export class UnionTypeSerializer extends TypeSerializerComponent<UnionType> {
     supports(t: unknown) {
@@ -9,7 +9,7 @@ export class UnionTypeSerializer extends TypeSerializerComponent<UnionType> {
     }
 
     /**
-     * Will be run after [[TypeSerializer]] so `type` will already be set.
+     * Will be run after {@link TypeSerializer} so `type` will already be set.
      * @param type
      * @param obj
      */

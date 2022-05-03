@@ -1,7 +1,7 @@
 import { ReferenceType } from "../../../models";
 
 import { TypeSerializerComponent } from "../../components";
-import { ReferenceType as JSONReferenceType } from "../../schema";
+import type { ReferenceType as JSONReferenceType } from "../../schema";
 
 export class ReferenceTypeSerializer extends TypeSerializerComponent<ReferenceType> {
     supports(t: unknown) {
@@ -20,6 +20,11 @@ export class ReferenceTypeSerializer extends TypeSerializerComponent<ReferenceTy
             obj.typeArguments = type.typeArguments.map((t) =>
                 this.owner.toObject(t)
             );
+        }
+
+        if (type.qualifiedName && type.package) {
+            obj.qualifiedName = type.qualifiedName;
+            obj.package = type.package;
         }
 
         return {

@@ -1,0 +1,16 @@
+{
+    "core": {
+        "workingDir": "dist/tmp/.reg",
+        "actualDir": "dist/tmp/__screenshots__",
+        "thresholdRate": 0.001,
+        "addIgnore": true,
+        "ximgdiff": {
+            "invocationType": "client"
+        }
+    },
+    "plugins": {
+        "reg-notify-github-plugin": {
+            "clientId": "MzIwNDY0MzDWL6ksSE3JT9Y3tLAwNbKwNNQPAQoElxTl56UDAA=="
+        }
+    }
+}

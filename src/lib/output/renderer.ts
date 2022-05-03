@@ -1,91 +1,234 @@
 /**
  * Holds all logic used render and output the final documentation.
  *
- * The [[Renderer]] class is the central controller within this namespace. When invoked it creates
- * an instance of [[BaseTheme]] which defines the layout of the documentation and fires a
- * series of [[RendererEvent]] events. Instances of [[BasePlugin]] can listen to these events and
+ * The {@link Renderer} class is the central controller within this namespace. When invoked it creates
+ * an instance of {@link Theme} which defines the layout of the documentation and fires a
+ * series of {@link RendererEvent} events. Instances of {@link BasePlugin} can listen to these events and
  * alter the generated output.
  */
+import * as fs from "fs";
+import * as path from "path";
 
-import * as Path from "path";
-import * as FS from "fs-extra";
-// eslint-disable-next-line
-const ProgressBar = require("progress");
-
-import { Application } from "../application";
-import { Theme } from "./theme";
+import type { Application } from "../application";
+import type { Theme } from "./theme";
 import { RendererEvent, PageEvent } from "./events";
-import { ProjectReflection } from "../models/reflections/project";
-import { UrlMapping } from "./models/UrlMapping";
-import { writeFile } from "../utils/fs";
-import { DefaultTheme } from "./themes/DefaultTheme";
+import type { ProjectReflection } from "../models/reflections/project";
+import type { UrlMapping } from "./models/UrlMapping";
+import { remove, writeFileSync } from "../utils/fs";
+import { DefaultTheme } from "./themes/default/DefaultTheme";
 import { RendererComponent } from "./components";
 import { Component, ChildableComponent } from "../utils/component";
-import { BindOption } from "../utils";
+import { BindOption, EventHooks } from "../utils";
 import { loadHighlighter } from "../utils/highlighter";
-import { Theme as ShikiTheme } from "shiki";
+import type { Theme as ShikiTheme } from "shiki";
+import { ReferenceType, Reflection } from "../models";
+import type { JsxElement } from "../utils/jsx.elements";
+import type { DefaultThemeRenderContext } from "./themes/default/DefaultThemeRenderContext";
 
 /**
- * The renderer processes a [[ProjectReflection]] using a [[BaseTheme]] instance and writes
+ * Describes the hooks available to inject output in the default theme.
+ * If the available hooks don't let you put something where you'd like, please open an issue!
+ */
+export interface RendererHooks {
+    /**
+     * Applied immediately after the opening `<head>` tag.
+     */
+    "head.begin": [DefaultThemeRenderContext];
+
+    /**
+     * Applied immediately before the closing `</head>` tag.
+     */
+    "head.end": [DefaultThemeRenderContext];
+
+    /**
+     * Applied immediately after the opening `<body>` tag.
+     */
+    "body.begin": [DefaultThemeRenderContext];
+
+    /**
+     * Applied immediately before the closing `</body>` tag.
+     */
+    "body.end": [DefaultThemeRenderContext];
+
+    /**
+     * Applied immediately before the main template.
+     */
+    "content.begin": [DefaultThemeRenderContext];
+
+    /**
+     * Applied immediately after the main template.
+     */
+    "content.end": [DefaultThemeRenderContext];
+
+    /**
+     * Applied immediately before calling `context.navigation`.
+     */
+    "navigation.begin": [DefaultThemeRenderContext];
+
+    /**
+     * Applied immediately after calling `context.navigation`.
+     */
+    "navigation.end": [DefaultThemeRenderContext];
+}
+
+/**
+ * The renderer processes a {@link ProjectReflection} using a {@link Theme} instance and writes
  * the emitted html documents to a output directory. You can specify which theme should be used
- * using the ```--theme <name>``` command line argument.
+ * using the `--theme <name>` command line argument.
  *
- * Subclasses of [[BasePlugin]] that have registered themselves in the [[Renderer.PLUGIN_CLASSES]]
- * will be automatically initialized. Most of the core functionality is provided as separate plugins.
- *
- * [[Renderer]] is a subclass of [[EventDispatcher]] and triggers a series of events while
+ * {@link Renderer} is a subclass of {@link EventDispatcher} and triggers a series of events while
  * a project is being processed. You can listen to these events to control the flow or manipulate
  * the output.
  *
- *  * [[Renderer.EVENT_BEGIN]]<br>
+ *  * {@link Renderer.EVENT_BEGIN}<br>
  *    Triggered before the renderer starts rendering a project. The listener receives
- *    an instance of [[RendererEvent]]. By calling [[RendererEvent.preventDefault]] the entire
+ *    an instance of {@link RendererEvent}. By calling {@link RendererEvent.preventDefault} the entire
  *    render process can be canceled.
  *
- *    * [[Renderer.EVENT_BEGIN_PAGE]]<br>
+ *    * {@link Renderer.EVENT_BEGIN_PAGE}<br>
  *      Triggered before a document will be rendered. The listener receives an instance of
- *      [[PageEvent]]. By calling [[PageEvent.preventDefault]] the generation of the
+ *      {@link PageEvent}. By calling {@link PageEvent.preventDefault} the generation of the
  *      document can be canceled.
  *
- *    * [[Renderer.EVENT_END_PAGE]]<br>
+ *    * {@link Renderer.EVENT_END_PAGE}<br>
  *      Triggered after a document has been rendered, just before it is written to disc. The
- *      listener receives an instance of [[PageEvent]]. When calling
- *      [[PageEvent.preventDefault]] the the document will not be saved to disc.
+ *      listener receives an instance of {@link PageEvent}. When calling
+ *      {@link PageEvent.preventDefault} the the document will not be saved to disc.
  *
- *  * [[Renderer.EVENT_END]]<br>
+ *  * {@link Renderer.EVENT_END}<br>
  *    Triggered after the renderer has written all documents. The listener receives
- *    an instance of [[RendererEvent]].
+ *    an instance of {@link RendererEvent}.
  */
 @Component({ name: "renderer", internal: true, childClass: RendererComponent })
 export class Renderer extends ChildableComponent<
     Application,
     RendererComponent
 > {
+    private themes = new Map<string, new (renderer: Renderer) => Theme>([
+        ["default", DefaultTheme],
+    ]);
+
+    private unknownSymbolResolvers = new Map<
+        string,
+        Array<(symbol: string) => string | undefined>
+    >();
+
+    /** @event */
+    static readonly EVENT_BEGIN_PAGE = PageEvent.BEGIN;
+    /** @event */
+    static readonly EVENT_END_PAGE = PageEvent.END;
+    /** @event */
+    static readonly EVENT_BEGIN = RendererEvent.BEGIN;
+    /** @event */
+    static readonly EVENT_END = RendererEvent.END;
+
     /**
      * The theme that is used to render the documentation.
      */
     theme?: Theme;
 
+    /**
+     * Hooks which will be called when rendering pages.
+     * Note:
+     * - Hooks added during output will be discarded at the end of rendering.
+     * - Hooks added during a page render will be discarded at the end of that page's render.
+     *
+     * See {@link RendererHooks} for a description of each available hook, and when it will be called.
+     */
+    hooks = new EventHooks<RendererHooks, JsxElement>();
+
+    /** @internal */
     @BindOption("theme")
     themeName!: string;
 
-    @BindOption("disableOutputCheck")
-    disableOutputCheck!: boolean;
+    /** @internal */
+    @BindOption("cleanOutputDir")
+    cleanOutputDir!: boolean;
 
+    /** @internal */
+    @BindOption("cname")
+    cname!: string;
+
+    /** @internal */
     @BindOption("gaID")
     gaID!: string;
 
+    /** @internal */
     @BindOption("gaSite")
     gaSite!: string;
 
+    /** @internal */
+    @BindOption("githubPages")
+    githubPages!: boolean;
+
+    /** @internal */
     @BindOption("hideGenerator")
     hideGenerator!: boolean;
 
-    @BindOption("toc")
-    toc!: string[];
+    /** @internal */
+    @BindOption("lightHighlightTheme")
+    lightTheme!: ShikiTheme;
 
-    @BindOption("highlightTheme")
-    highlightTheme!: ShikiTheme;
+    /** @internal */
+    @BindOption("darkHighlightTheme")
+    darkTheme!: ShikiTheme;
+
+    /**
+     * Define a new theme that can be used to render output.
+     * This API will likely be changing in TypeDoc 0.23.
+     * (sorry... changing as soon as it's introduced)
+     * As it is, it provides reasonable flexibility, but doesn't give users a sufficiently
+     * easy way to overwrite parts of a theme.
+     * @param name
+     * @param theme
+     */
+    defineTheme(name: string, theme: new (renderer: Renderer) => Theme) {
+        if (this.themes.has(name)) {
+            throw new Error(`The theme "${name}" has already been defined.`);
+        }
+        this.themes.set(name, theme);
+    }
+
+    /**
+     * Adds a new resolver that the theme can used to try to figure out how to link to a symbol
+     * declared by a third-party library which is not included in the documentation.
+     * @param packageName the npm package name that this resolver can handle to limit which files it will be tried on.
+     *   If the resolver will create links for Node builtin types, it should be set to `@types/node`.
+     *   Links for builtin types live in the default lib files under `typescript`.
+     * @param resolver a function that will be called to create links for a given symbol name in the registered path.
+     *  If the provided name is not contained within the docs, should return `undefined`.
+     * @since 0.22.0
+     */
+    addUnknownSymbolResolver(
+        packageName: string,
+        resolver: (name: string) => string | undefined
+    ) {
+        const existing = this.unknownSymbolResolvers.get(packageName);
+        if (existing) {
+            existing.push(resolver);
+        } else {
+            this.unknownSymbolResolvers.set(packageName, [resolver]);
+        }
+    }
+
+    /**
+     * Marked as internal for now. Using this requires the internal `getSymbol()` method on ReferenceType.
+     * Someday that needs to be fixed so that this can be made public. ReferenceTypes really shouldn't store
+     * symbols so that we don't need to keep the program around forever.
+     * @internal
+     */
+    attemptExternalResolution(type: ReferenceType): string | undefined {
+        if (!type.qualifiedName || !type.package) {
+            return;
+        }
+
+        const resolvers = this.unknownSymbolResolvers.get(type.package);
+
+        for (const resolver of resolvers || []) {
+            const resolved = resolver(type.qualifiedName);
+            if (resolved) return resolved;
+        }
+    }
 
     @BindOption("hideGoJSNav")
     hideGoJSNav!: boolean;
@@ -109,10 +252,15 @@ export class Renderer extends ChildableComponent<
         project: ProjectReflection,
         outputDirectory: string
     ): Promise<void> {
-        await loadHighlighter(this.highlightTheme);
+        const momento = this.hooks.saveMomento();
+        const start = Date.now();
+        await loadHighlighter(this.lightTheme, this.darkTheme);
+        this.application.logger.verbose(
+            `Renderer: Loading highlighter took ${Date.now() - start}ms`
+        );
         if (
             !this.prepareTheme() ||
-            !this.prepareOutputDirectory(outputDirectory)
+            !(await this.prepareOutputDirectory(outputDirectory))
         ) {
             return;
         }
@@ -122,23 +270,20 @@ export class Renderer extends ChildableComponent<
             outputDirectory,
             project
         );
-        output.settings = this.application.options.getRawValues();
         output.urls = this.theme!.getUrls(project);
 
-        const bar = new ProgressBar("Rendering [:bar] :percent", {
-            total: output.urls.length,
-            width: 40,
-        });
-
         this.trigger(output);
+
         if (!output.isDefaultPrevented) {
             output.urls.forEach((mapping: UrlMapping) => {
                 this.renderDocument(output.createPageEvent(mapping));
-                bar.tick();
             });
 
             this.trigger(RendererEvent.END, output);
         }
+
+        this.theme = void 0;
+        this.hooks.restoreMomento(momento);
     }
 
     /**
@@ -148,31 +293,30 @@ export class Renderer extends ChildableComponent<
      * @return TRUE if the page has been saved to disc, otherwise FALSE.
      */
     private renderDocument(page: PageEvent): boolean {
+        const momento = this.hooks.saveMomento();
         this.trigger(PageEvent.BEGIN, page);
         if (page.isDefaultPrevented) {
+            this.hooks.restoreMomento(momento);
             return false;
         }
 
-        // Theme must be set as this is only called in render, and render ensures theme is set.
-        page.template =
-            page.template ||
-            this.theme!.resources.templates.getResource(
-                page.templateName
-            )!.getTemplate();
-        page.contents = page.template(page, {
-            allowProtoMethodsByDefault: true,
-            allowProtoPropertiesByDefault: true,
-        });
+        if (page.model instanceof Reflection) {
+            page.contents = this.theme!.render(page as PageEvent<Reflection>);
+        } else {
+            throw new Error("Should be unreachable");
+        }
 
         this.trigger(PageEvent.END, page);
+        this.hooks.restoreMomento(momento);
+
         if (page.isDefaultPrevented) {
             return false;
         }
 
         try {
-            writeFile(page.filename, page.contents, false);
+            writeFileSync(page.filename, page.contents);
         } catch (error) {
-            this.application.logger.error("Could not write %s", page.filename);
+            this.application.logger.error(`Could not write ${page.filename}`);
             return false;
         }
 
@@ -189,48 +333,21 @@ export class Renderer extends ChildableComponent<
      */
     private prepareTheme(): boolean {
         if (!this.theme) {
-            const themeName = this.themeName;
-            let path = Path.resolve(themeName);
-            if (!FS.existsSync(path)) {
-                path = Path.join(Renderer.getThemeDirectory(), themeName);
-                if (!FS.existsSync(path)) {
-                    this.application.logger.error(
-                        "The theme %s could not be found.",
-                        themeName
-                    );
-                    return false;
-                }
-            }
-
-            const filename = Path.join(path, "theme.js");
-            if (!FS.existsSync(filename)) {
-                this.theme = this.addComponent(
-                    "theme",
-                    new DefaultTheme(this, path)
+            const ctor = this.themes.get(this.themeName);
+            if (!ctor) {
+                this.application.logger.error(
+                    `The theme '${
+                        this.themeName
+                    }' is not defined. The available themes are: ${[
+                        ...this.themes.keys(),
+                    ].join(", ")}`
                 );
+                return false;
             } else {
-                try {
-                    /* eslint-disable */
-                    const themeClass =
-                        typeof require(filename) === "function"
-                            ? require(filename)
-                            : require(filename).default;
-                    /* eslint-enable */
-
-                    this.theme = this.addComponent(
-                        "theme",
-                        new themeClass(this, path)
-                    );
-                } catch (err) {
-                    throw new Error(
-                        `Exception while loading "${filename}". You must export a \`new Theme(renderer, basePath)\` compatible class.\n` +
-                            err
-                    );
-                }
+                this.theme = new ctor(this);
             }
         }
 
-        this.theme!.resources.activate();
         return true;
     }
 
@@ -241,83 +358,51 @@ export class Renderer extends ChildableComponent<
      * @param directory  The path to the directory that should be prepared.
      * @returns TRUE if the directory could be prepared, otherwise FALSE.
      */
-    private prepareOutputDirectory(directory: string): boolean {
-        if (FS.existsSync(directory)) {
-            if (!FS.statSync(directory).isDirectory()) {
-                this.application.logger.error(
-                    'The output target "%s" exists but it is not a directory.',
-                    directory
-                );
-                return false;
-            }
-
-            if (this.disableOutputCheck) {
-                return true;
-            }
-
-            if (FS.readdirSync(directory).length === 0) {
-                return true;
-            }
-
-            // Theme must be set as this is only called after the theme is created.
-            if (!this.theme!.isOutputDirectory(directory)) {
-                this.application.logger.error(
-                    'The output directory "%s" exists but does not seem to be a documentation generated by TypeDoc.\n' +
-                        "Make sure this is the right target directory, delete the folder and rerun TypeDoc.",
-                    directory
-                );
-                return false;
-            }
-
+    private async prepareOutputDirectory(directory: string): Promise<boolean> {
+        if (this.cleanOutputDir) {
             try {
-                FS.removeSync(directory);
+                await remove(directory);
             } catch (error) {
                 this.application.logger.warn(
                     "Could not empty the output directory."
                 );
+                return false;
             }
         }
 
-        if (!FS.existsSync(directory)) {
+        try {
+            fs.mkdirSync(directory, { recursive: true });
+        } catch (error) {
+            this.application.logger.error(
+                `Could not create output directory ${directory}.`
+            );
+            return false;
+        }
+
+        if (this.githubPages) {
             try {
-                FS.mkdirpSync(directory);
+                const text =
+                    "TypeDoc added this file to prevent GitHub Pages from " +
+                    "using Jekyll. You can turn off this behavior by setting " +
+                    "the `githubPages` option to false.";
+
+                fs.writeFileSync(path.join(directory, ".nojekyll"), text);
             } catch (error) {
-                this.application.logger.error(
-                    "Could not create output directory %s",
-                    directory
+                this.application.logger.warn(
+                    "Could not create .nojekyll file."
                 );
                 return false;
             }
         }
 
+        if (this.cname) {
+            fs.writeFileSync(path.join(directory, "CNAME"), this.cname);
+        }
+
         return true;
-    }
-
-    // This exists so that the resources can get the directory
-    // without importing this file. Normally, I'd just directly
-    // get the path, but typedoc-plugin-markdown overrides the
-    // static version, and I don't need to break that yet...
-    getDefaultTheme() {
-        return Renderer.getDefaultTheme();
-    }
-
-    /**
-     * Return the path containing the themes shipped with TypeDoc.
-     *
-     * @returns The path to the theme directory.
-     */
-    static getThemeDirectory(): string {
-        return Path.dirname(require.resolve("typedoc-default-themes"));
-    }
-
-    /**
-     * Return the path to the default theme.
-     *
-     * @returns The path to the default theme.
-     */
-    static getDefaultTheme(): string {
-        return Path.join(Renderer.getThemeDirectory(), "default");
     }
 }
 
+// HACK: THIS HAS TO STAY DOWN HERE
+// if you try to move it up to the top of the file, then you'll run into stuff being used before it has been defined.
 import "./plugins";

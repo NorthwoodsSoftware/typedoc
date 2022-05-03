@@ -1,15 +1,16 @@
 import { SourceFile, SourceDirectory } from "../sources/index";
-import { Reflection, ReflectionKind, TraverseProperty } from "./abstract";
+import { Reflection, TraverseProperty } from "./abstract";
 import { ContainerReflection } from "./container";
 import { splitUnquotedString } from "./utils";
 import { ReferenceReflection } from "./reference";
-import { DeclarationReflection } from "./declaration";
-import { SignatureReflection } from "./signature";
-import { ParameterReflection } from "./parameter";
+import type { DeclarationReflection } from "./declaration";
+import type { SignatureReflection } from "./signature";
+import type { ParameterReflection } from "./parameter";
 import { IntrinsicType } from "../types";
-import { TypeParameterReflection } from "./type-parameter";
+import type { TypeParameterReflection } from "./type-parameter";
 import { removeIfPresent } from "../../utils";
 import type * as ts from "typescript";
+import { ReflectionKind } from "./kind";
 
 /**
  * A reflection that represents the root of the project.
@@ -49,7 +50,7 @@ export class ProjectReflection extends ContainerReflection {
      * The name can be passed as a command line argument or it is read from the package info.
      * this.name is assigned in the Reflection class.
      */
-    name!: string;
+    override name!: string;
 
     /**
      * The contents of the readme.md file of the project when found.
@@ -73,7 +74,7 @@ export class ProjectReflection extends ContainerReflection {
     /**
      * Return whether this reflection is the root / project reflection.
      */
-    isProject(): this is ProjectReflection {
+    override isProject(): this is ProjectReflection {
         return true;
     }
 
@@ -95,7 +96,9 @@ export class ProjectReflection extends ContainerReflection {
      * @param names The name hierarchy to look for, if a string, the name will be split on "."
      * @return The found reflection or undefined.
      */
-    findReflectionByName(arg: string | string[]): Reflection | undefined {
+    override findReflectionByName(
+        arg: string | string[]
+    ): Reflection | undefined {
         const names: string[] = Array.isArray(arg)
             ? arg
             : splitUnquotedString(arg, ".");
@@ -183,7 +186,7 @@ export class ProjectReflection extends ContainerReflection {
         }
         this.getReferenceGraph().delete(reflection.id);
 
-        reflection.traverse((child) => this.removeReflection(child));
+        reflection.traverse((child) => (this.removeReflection(child), true));
 
         const parent = reflection.parent as DeclarationReflection;
         parent?.traverse((child, property) => {
@@ -225,7 +228,10 @@ export class ProjectReflection extends ContainerReflection {
         });
 
         const symbol = this.reflectionIdToSymbolMap.get(reflection.id);
-        if (symbol) {
+        if (
+            symbol &&
+            this.symbolToReflectionIdMap.get(symbol) === reflection.id
+        ) {
             this.symbolToReflectionIdMap.delete(symbol);
         }
 
