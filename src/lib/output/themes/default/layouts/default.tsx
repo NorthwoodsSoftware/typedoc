@@ -17,7 +17,8 @@ export const defaultLayout = (context: DefaultThemeRenderContext, props: PageEve
             <meta name="description" content={"Documentation for " + props.project.name} />
             <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-            <link rel="stylesheet" href={context.relativeURL("assets/style.css")} />
+            <link rel="stylesheet" href={context.relativeURL("../assets/css/style.css")} />
+            <link rel="stylesheet" href={context.relativeURL("assets/td-style.css")} />
             <link rel="stylesheet" href={context.relativeURL("assets/highlight.css")} />
             {context.options.getValue("customCss") && (
                 <link rel="stylesheet" href={context.relativeURL("assets/custom.css")} />
@@ -32,8 +33,8 @@ export const defaultLayout = (context: DefaultThemeRenderContext, props: PageEve
             </script>
             {context.header(props)}
 
-            <div class="container container-main">
-                <div class="row">
+            <div class="tsd w-full max-w-screen-xl mx-auto pb-4">
+                <div class="row px-2 w-full">
                     <div class="col-8 col-content">
                         {context.hook("content.begin")}
                         {props.template(props)}

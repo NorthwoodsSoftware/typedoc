@@ -27,6 +27,7 @@ export enum ReflectionKind {
     TypeAlias = 0x400000,
     Event = 0x800000,
     Reference = 0x1000000,
+    Constant = 0x2000000
 }
 
 /** @hidden */
@@ -68,5 +69,6 @@ export namespace ReflectionKind {
         ReflectionKind.IndexSignature |
         ReflectionKind.Property |
         ReflectionKind.Method |
-        ReflectionKind.Constructor;
+        ReflectionKind.Constructor |
+        ReflectionKind.Constant;
 }

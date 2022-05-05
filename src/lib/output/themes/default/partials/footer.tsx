@@ -9,12 +9,15 @@ export function footer(context: DefaultThemeRenderContext, props: PageEvent<Refl
     const hideGenerator = context.options.getValue("hideGenerator");
     return (
         <>
+            <div class="tsd w-full max-w-screen-xl mx-auto px-2">
+                <div class="bottom-copyright">Copyright &copy; 1998-2022 by Northwoods Software Corporation.</div>
+            </div>
             <footer
                 class={classNames({
                     "with-border-bottom": !hideGenerator,
                 })}
             >
-                <div class="container">
+                <div class="tsd w-full max-w-screen-xl mx-auto px-2">
                     {!hideLegend && props.legend?.length && (
                         <>
                             <h2>Legend</h2>
@@ -45,7 +48,7 @@ export function footer(context: DefaultThemeRenderContext, props: PageEvent<Refl
             </footer>
 
             {!hideGenerator && (
-                <div class="container tsd-generator">
+                <div class="tsd w-full max-w-screen-xl mx-auto tsd-generator">
                     <p>
                         {"Generated using "}
                         <a href="https://typedoc.org/" target="_blank">

@@ -6,6 +6,36 @@ import { JSX } from "../../../../utils";
 
 export const reflectionTemplate = (context: DefaultThemeRenderContext, props: PageEvent<ContainerReflection>) => (
     <>
+        {props.model.flags.isExtension && (
+            <section class="tsd-panel tsd-extension">
+                <p>
+                    This is an extension and not part of the main GoJS library.
+                    Note that the API for this class may change at any time.
+                    If you intend to use an extension in production, you should copy the code to your own source directory.
+                    Extensions can be found in the GoJS kit under the <code>extensions</code>,
+                    <code>extensionsTS</code> (UMD modules), or <code>extensionsJSM</code> (ES6 modules) folders.
+                    See the <a href={context.relativeURL("../intro/extensions.html")}>Extensions intro page</a> for more information.
+                </p>
+            </section>
+        )}
+
+        {props.model.flags.isStorage && (
+            <section class="tsd-panel tsd-extension">
+                <p>
+                    This is part of GoCloudStorage and not part of the main GoJS library.
+                    Storage can be found in the GoJS kit under the <code>projects</code> folder.
+                    See the <a href={context.relativeURL("../intro/storage.html")}>Storage intro page</a> for more information.
+                </p>
+            </section>
+        )}
+
+        {props.model instanceof DeclarationReflection && !!props.model.typeHierarchy && (
+            <section class="tsd-panel tsd-hierarchy">
+                <h3>Hierarchy</h3>
+                {context.hierarchy(props.model.typeHierarchy)}
+            </section>
+        )}
+
         {props.model.hasComment() && <section class="tsd-panel tsd-comment">{context.comment(props.model)}</section>}
 
         {hasTypeParameters(props.model) && (
@@ -16,12 +46,6 @@ export const reflectionTemplate = (context: DefaultThemeRenderContext, props: Pa
         )}
         {props.model instanceof DeclarationReflection && (
             <>
-                {!!props.model.typeHierarchy && (
-                    <section class="tsd-panel tsd-hierarchy">
-                        <h3>Hierarchy</h3>
-                        {context.hierarchy(props.model.typeHierarchy)}
-                    </section>
-                )}
                 {!!props.model.implementedTypes && (
                     <section class="tsd-panel">
                         <h3>Implements</h3>

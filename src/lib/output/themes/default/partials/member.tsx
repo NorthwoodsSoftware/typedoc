@@ -2,7 +2,6 @@ import { renderFlags, wbr } from "../../lib";
 import type { DefaultThemeRenderContext } from "../DefaultThemeRenderContext";
 import { JSX } from "../../../../utils";
 import { DeclarationReflection, ReferenceReflection } from "../../../../models";
-import { anchorIcon } from "./anchor-icon";
 
 export const member = (context: DefaultThemeRenderContext, props: DeclarationReflection) => (
     <section class={"tsd-panel tsd-member " + props.cssClasses}>
@@ -10,8 +9,26 @@ export const member = (context: DefaultThemeRenderContext, props: DeclarationRef
         {!!props.name && (
             <h3 class="tsd-anchor-link">
                 {renderFlags(props.flags)}
+                {context.isReadOnly(props) && (<span class={"tsd-flag ts-flagReadOnly"}>Read-only</span>)}
+                {" "}
                 {wbr(props.name)}
-                {anchorIcon(props.anchor)}
+                {/* For properties (accessors in TypeDoc), print the type in the header */}
+                {props.hasGetterOrSetter()
+                    ? !!props.getSignature && (
+                        !!props.getSignature.type && (
+                            <>
+                                <span class="tsd-signature-symbol">: </span>
+                                {context.type(props.getSignature.type)}
+                            </>
+                        )
+                    )
+                    : !!props.type && (
+                        <>
+                            <span class="tsd-signature-symbol">: </span>
+                            {context.type(props.type)}
+                        </>
+                    )
+                }
             </h3>
         )}
         {props.signatures

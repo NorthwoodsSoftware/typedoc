@@ -1,31 +1,9 @@
 import { DeclarationReflection, ReflectionType } from "../../../../models";
 import { JSX } from "../../../../utils";
-import { renderTypeParametersSignature, wbr } from "../../lib";
 import type { DefaultThemeRenderContext } from "../DefaultThemeRenderContext";
 
 export const memberDeclaration = (context: DefaultThemeRenderContext, props: DeclarationReflection) => (
     <>
-        <div class="tsd-signature tsd-kind-icon">
-            {wbr(props.name)}
-            {renderTypeParametersSignature(props.typeParameters)}
-            {props.type && (
-                <>
-                    <span class="tsd-signature-symbol">{!!props.flags.isOptional && "?"}:</span>{" "}
-                    {context.type(props.type)}
-                </>
-            )}
-            {!!props.defaultValue && (
-                <>
-                    <span class="tsd-signature-symbol">
-                        {" = "}
-                        {props.defaultValue}
-                    </span>
-                </>
-            )}
-        </div>
-
-        {context.memberSources(props)}
-
         {context.comment(props)}
 
         {!!props.typeParameters && (

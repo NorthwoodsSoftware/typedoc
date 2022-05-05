@@ -1,5 +1,7 @@
+import * as FS from "fs";
+
 import type { RendererHooks } from "../..";
-import type { ReferenceType, Reflection } from "../../../models";
+import type { ReferenceType, Reflection, CommentTag, DeclarationReflection } from "../../../models";
 import type { Options } from "../../../utils";
 import type { DefaultTheme } from "./DefaultTheme";
 import { defaultLayout } from "./layouts/default";
@@ -34,6 +36,7 @@ function bind<F, L extends any[], R>(fn: (f: F, ...a: L) => R, first: F) {
 
 export class DefaultThemeRenderContext {
     options: Options;
+    private validTags: string[] = ["override", "see", "since"];
 
     constructor(private theme: DefaultTheme, options: Options) {
         this.options = options;
@@ -56,6 +59,60 @@ export class DefaultThemeRenderContext {
     attemptExternalResolution = (type: ReferenceType) => {
         return this.theme.owner.attemptExternalResolution(type);
     };
+
+    // check if this declaration contains a particular tag
+	containsTag = (value: string, declaration: DeclarationReflection) => {
+		let tags: CommentTag[] = [];
+		if (declaration?.signatures) {
+			// pull the tags from the signatures if they exist
+			declaration.signatures.forEach(s => {
+				if (s.comment?.tags) {
+					tags = tags.concat(s.comment.tags);
+				}
+			});
+		} else if (declaration?.comment?.tags) {
+			// otherwise pull from the declaration itself
+			tags = tags.concat(declaration.comment.tags);
+		}
+
+		const tagNames = tags.map(t => {
+			if (t) {
+				return t.tagName;
+			}
+			return false;
+		});
+        return tagNames.indexOf(value) > -1;
+	}
+
+    // check if this declaration has a tag from the list of valid tags
+    hasValidTag = (tags: CommentTag[]) => {
+        for (let i = 0; i < tags.length; i++) {
+            if (this.validTags.indexOf(tags[i].tagName) > -1) return true;
+        }
+        return false;
+    }
+
+    // check if a particular tag is in the list of valid tags
+    isValidTag = (tag: string) => {
+        return this.validTags.indexOf(tag) > -1;
+    }
+
+    // check if a property (aka accessor) is readonly
+	isReadOnly = (declaration: DeclarationReflection) => {
+		if (declaration.kindString === "Accessor" && declaration.getSignature && !declaration.setSignature) {
+			return true;
+		}
+        return false;
+	}
+
+    getVersion = () => {
+		var ver = "";
+		if (FS.existsSync('version.txt')) ver = FS.readFileSync('version.txt', 'utf8');
+		if (ver) {
+			return "<br/>version " + ver;
+		}
+		return "";
+	}
 
     reflectionTemplate = bind(reflectionTemplate, this);
     indexTemplate = bind(indexTemplate, this);
