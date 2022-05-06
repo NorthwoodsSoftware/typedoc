@@ -36,7 +36,7 @@ export function footer(context: DefaultThemeRenderContext, props: PageEvent<Refl
                     )}
 
                     <h2>Settings</h2>
-                    <p>
+                    <p class="mb-4">
                         Theme{" "}
                         <select id="theme">
                             <option value="os">OS</option>

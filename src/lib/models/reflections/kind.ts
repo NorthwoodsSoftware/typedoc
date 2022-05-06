@@ -32,7 +32,7 @@ export enum ReflectionKind {
 
 /** @hidden */
 export namespace ReflectionKind {
-    export const All = ReflectionKind.Reference * 2 - 1;
+    export const All = ReflectionKind.Constant * 2 - 1;
 
     export const ClassOrInterface =
         ReflectionKind.Class | ReflectionKind.Interface;

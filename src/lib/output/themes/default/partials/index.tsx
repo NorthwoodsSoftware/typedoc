@@ -3,11 +3,11 @@ import type { DefaultThemeRenderContext } from "../DefaultThemeRenderContext";
 import { JSX } from "../../../../utils";
 import type { ContainerReflection, ReflectionCategory } from "../../../../models";
 
-function renderCategory(context: DefaultThemeRenderContext, item: ReflectionCategory, prependName = "") {
+function renderCategory(context: DefaultThemeRenderContext, item: ReflectionCategory, appendName = "") {
     if (item.title === "Type") return;
     return (
         <section class="tsd-index-section">
-            {!context.options.getValue("hideGoJSNav") && (<h3>{prependName ? `${prependName} ${item.title}` : item.title}</h3>)}
+            {!context.options.getValue("hideGoJSNav") && (<h3>{appendName ? `${item.title} ${appendName}` : item.title}</h3>)}
             <ul class="tsd-index-list">
                 {item.children.map((item) => (
                     !context.containsTag("unindexed", item) && (
@@ -29,7 +29,7 @@ export function index(context: DefaultThemeRenderContext, props: ContainerReflec
             <section class="tsd-panel-group tsd-index-group">
                 <h2>{context.options.getValue("indexTitle")}</h2>
                 <section class="tsd-panel tsd-index-panel">
-                    <div class="tsd-index-content">{props.categories.map((item) => renderCategory(context, item))}</div>
+                    <div class="tsd-index-content">{props.categories.map((item) => renderCategory(context, item, "Classes"))}</div>
                 </section>
             </section>
         );

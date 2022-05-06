@@ -35,7 +35,10 @@ export const parameter = (context: DefaultThemeRenderContext, props: Declaration
                             <h5>
                                 {!!item.flags.isRest && <span class="tsd-signature-symbol">...</span>}
                                 {wbr(item.name)}
-                                <span class="tsd-signature-symbol">{!!item.flags.isOptional && "?"}:</span>
+                                <span class="tsd-signature-symbol">
+                                    {!!item.flags.isOptional && "?"}
+                                    {": "}
+                                </span>
                                 function
                             </h5>
 

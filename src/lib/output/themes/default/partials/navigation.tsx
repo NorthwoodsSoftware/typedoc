@@ -91,6 +91,7 @@ function secondaryNavigation(context: DefaultThemeRenderContext, props: PageEven
         <ul>
             {children
                 .filter((child) => !child.kindOf(ReflectionKind.SomeModule))
+                .filter((child) => !context.containsTag("unindexed", child))
                 .filter((child) => !child.flags.isExtension && !child.flags.isStorage)
                 .map((child) => {
                     return (

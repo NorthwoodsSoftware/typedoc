@@ -4,14 +4,13 @@ import { Index } from "lunr";
 interface IDocument {
     id: number;
     kind: number;
-    name: string;
+    fullName: string;
     url: string;
     classes: string;
     parent?: string;
 }
 
 interface IData {
-    kinds: { [kind: number]: string };
     rows: IDocument[];
     index: object;
 }
@@ -66,12 +65,20 @@ export function initSearch() {
         searchEl.classList.remove("has-focus");
     });
 
-    field.addEventListener("focus", () => searchEl.classList.add("has-focus"));
+    field.addEventListener("focus", () => {
+        searchEl.classList.add("has-focus");
+        field.value = "";
+        results.textContent = "";
+    });
     field.addEventListener("blur", () => {
-        if (!resultClicked) {
+        // If the user just clicked on a search result, don't blur immediately
+        if (resultClicked) {
             resultClicked = false;
-            searchEl.classList.remove("has-focus");
+            return;
         }
+        setTimeout(() => {
+            searchEl.classList.remove("has-focus");
+        }, 100);
     });
 
     const state: SearchState = {
@@ -118,8 +125,10 @@ function bindEvents(
      */
     document.body.addEventListener("keydown", (e) => {
         if (e.altKey || e.ctrlKey || e.metaKey) return;
-        if (!field.matches(":focus") && e.key === "/") {
+        if (!field.matches(":focus") && e.key.length === 1 && e.key.match(/[a-zA-Z]/) !== null) {
             field.focus();
+            field.value = e.key;
+            updateResults(searchEl, results, field, state);
             e.preventDefault();
         }
     });
@@ -149,6 +158,8 @@ function updateResults(
 
     results.textContent = "";
 
+    if (query.value === "") return;
+
     const searchText = query.value.trim();
 
     // Perform a wildcard search
@@ -160,13 +171,7 @@ function updateResults(
         const row = state.data.rows[Number(res[i].ref)];
 
         // Bold the matched part of the query in the search results
-        let name = boldMatches(row.name, searchText);
-        if (row.parent) {
-            name = `<span class="parent">${boldMatches(
-                row.parent,
-                searchText
-            )}.</span>${name}`;
-        }
+        let name = boldMatches(row.fullName, searchText);
 
         const item = document.createElement("li");
         item.classList.value = row.classes;

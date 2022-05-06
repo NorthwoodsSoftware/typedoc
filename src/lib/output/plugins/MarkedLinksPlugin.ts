@@ -27,9 +27,6 @@ export class MarkedLinksPlugin extends ContextAwareRendererComponent {
     @BindOption("jsDocLinks")
     jsDocLinks!: boolean;
 
-    @BindOption("isGoCloudStorage")
-    isGoCloudStorage!: boolean;
-
     @BindOption("validation")
     validation!: ValidationOptions;
 

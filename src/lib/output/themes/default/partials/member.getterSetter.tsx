@@ -6,7 +6,6 @@ export const memberGetterSetter = (context: DefaultThemeRenderContext, props: De
     <>
         <ul class="tsd-descriptions">
             {!!props.getSignature && <li class="tsd-description">{context.memberSignatureBody(props.getSignature)}</li>}
-            {!!props.setSignature && <li class="tsd-description">{context.memberSignatureBody(props.setSignature)}</li>}
         </ul>
     </>
 );

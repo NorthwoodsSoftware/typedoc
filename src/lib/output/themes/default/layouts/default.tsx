@@ -18,7 +18,7 @@ export const defaultLayout = (context: DefaultThemeRenderContext, props: PageEve
             <meta name="viewport" content="width=device-width, initial-scale=1" />
 
             <link rel="stylesheet" href={context.relativeURL("../assets/css/style.css")} />
-            <link rel="stylesheet" href={context.relativeURL("assets/td-style.css")} />
+            <link rel="stylesheet" href={context.relativeURL("assets/style-tsd.css")} />
             <link rel="stylesheet" href={context.relativeURL("assets/highlight.css")} />
             {context.options.getValue("customCss") && (
                 <link rel="stylesheet" href={context.relativeURL("assets/custom.css")} />

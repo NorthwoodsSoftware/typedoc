@@ -283,12 +283,6 @@ export function addTypeDocOptions(options: Pick<Options, "addDeclaration">) {
         type: ParameterType.Boolean,
     });
     options.addDeclaration({
-        name: "isGoCloudStorage",
-        help:
-            "TODO",
-        type: ParameterType.Boolean,
-    });
-    options.addDeclaration({
         name: "indexTitle",
         help:
             "Sets the title to be displayed for the index and navigation.",

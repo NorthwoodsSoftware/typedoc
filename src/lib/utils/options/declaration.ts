@@ -102,7 +102,6 @@ export interface TypeDocOptionMap {
     githubPages: boolean;
     hideGenerator: boolean;
     hideGoJSNav: boolean;
-    isGoCloudStorage: boolean;
     indexTitle: string;
     topCopyright: string;
     showInheritedDefault: boolean;

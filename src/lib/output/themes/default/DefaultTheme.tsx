@@ -74,25 +74,25 @@ export class DefaultTheme extends Theme {
         {
             kind: [ReflectionKind.Class],
             isLeaf: false,
-            directory: "classes",
+            directory: "symbols",
             template: this.reflectionTemplate,
         },
         {
             kind: [ReflectionKind.Interface],
             isLeaf: false,
-            directory: "interfaces",
+            directory: "symbols",
             template: this.reflectionTemplate,
         },
         {
             kind: [ReflectionKind.Enum],
             isLeaf: false,
-            directory: "enums",
+            directory: "symbols",
             template: this.reflectionTemplate,
         },
         {
             kind: [ReflectionKind.Namespace, ReflectionKind.Module],
             isLeaf: false,
-            directory: "modules",
+            directory: "symbols",
             template: this.reflectionTemplate,
         },
     ];
@@ -302,6 +302,12 @@ export class DefaultTheme extends Theme {
         }
         if (reflection.flags.isExternal) {
             classes.push("tsd-is-external");
+        }
+        if (reflection.flags.isExtension) {
+            classes.push("tsd-is-extension");
+        }
+        if (reflection.flags.isStorage) {
+            classes.push("tsd-is-storage");
         }
 
         reflection.cssClasses = classes.join(" ");
