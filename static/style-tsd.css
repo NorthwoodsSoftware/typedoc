@@ -220,6 +220,7 @@ body.light {
     --color-menu-label: var(--light-color-menu-label);
     --color-panel: var(--light-color-panel);
     --color-panel-divider: var(--light-color-panel-divider);
+    --color-panel-targeted: var(--light-color-panel-targeted);
     --color-comment-tag: var(--light-color-comment-tag);
     --color-comment-tag-text: var(--light-color-comment-tag-text);
     --color-ts: var(--light-color-ts);
@@ -244,6 +245,7 @@ body.dark {
     --color-menu-label: var(--dark-color-menu-label);
     --color-panel: var(--dark-color-panel);
     --color-panel-divider: var(--dark-color-panel-divider);
+    --color-panel-targeted: var(--dark-color-panel-targeted);
     --color-comment-tag: var(--dark-color-comment-tag);
     --color-comment-tag-text: var(--dark-color-comment-tag-text);
     --color-ts: var(--dark-color-ts);
@@ -1447,6 +1449,8 @@ img {
     margin-left: 10px;
     vertical-align: middle;
     color: var(--color-text);
+    display: inline-flex;
+    height: 1.17em;
 }
 
 .tsd-anchor-icon svg {

@@ -6,6 +6,23 @@ import { DeclarationReflection, ReflectionType } from "../../../../models";
 export const parameter = (context: DefaultThemeRenderContext, props: DeclarationReflection) => (
     <>
         <ul class="tsd-parameters">
+            {!!props.signatures && (
+                <li class="tsd-parameter-signature">
+                    <ul class={"tsd-signatures " + props.cssClasses}>
+                        {props.signatures.map((item) => (
+                            <li class="tsd-signature tsd-kind-icon">
+                                {context.memberSignatureTitle(item, { hideName: true })}
+                            </li>
+                        ))}
+                    </ul>
+
+                    <ul class="tsd-descriptions">
+                        {props.signatures.map((item) => (
+                            <li class="tsd-description">{context.memberSignatureBody(item)}</li>
+                        ))}
+                    </ul>
+                </li>
+            )}
             {!!props.indexSignature && (
                 <>
                     <li class="tsd-parameter-index-signature">

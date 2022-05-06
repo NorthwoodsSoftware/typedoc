@@ -2,6 +2,7 @@ import { renderFlags, wbr } from "../../lib";
 import type { DefaultThemeRenderContext } from "../DefaultThemeRenderContext";
 import { JSX } from "../../../../utils";
 import { DeclarationReflection, ReferenceReflection } from "../../../../models";
+import { anchorIcon } from "./anchor-icon";
 
 export const member = (context: DefaultThemeRenderContext, props: DeclarationReflection) => (
     <section class={"tsd-panel tsd-member " + props.cssClasses}>
@@ -29,6 +30,7 @@ export const member = (context: DefaultThemeRenderContext, props: DeclarationRef
                         </>
                     )
                 }
+                {anchorIcon(props.anchor)}
             </h3>
         )}
         {props.signatures
