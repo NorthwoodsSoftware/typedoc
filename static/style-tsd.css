@@ -119,9 +119,6 @@
 .tsd p:not(.box, .boxrun, .boxread) {
     padding-bottom: 0;
 }
-.tsd p, .tsd ol, .tsd ul {
-    padding-bottom: initial;
-}
 .tsd ol, .tsd ul {
     margin-top: 0;
     margin-bottom: 10px;
@@ -1257,6 +1254,7 @@ ul.tsd-type-parameters {
     list-style: square;
     margin: 0;
     padding-left: 20px;
+    padding-bottom: 0px;
 }
 ul.tsd-parameters > li.tsd-parameter-signature,
 ul.tsd-type-parameters > li.tsd-parameter-signature {
