@@ -14,6 +14,7 @@
     --light-color-panel: var(--light-color-secondary-background);
     --light-color-panel-divider: #eee;
     --light-color-panel-targeted: #f4f9fe;
+    --light-color-signature-current: var(--light-color-panel-divider);
     --light-color-comment-tag: #707070;
     --light-color-comment-tag-text: #fff;
     --light-color-ext-background: #fefeaa;
@@ -39,6 +40,7 @@
     --dark-color-panel: var(--dark-color-secondary-background);
     --dark-color-panel-divider: #818181;
     --dark-color-panel-targeted: #24394e;
+    --dark-color-signature-current: #3d4757;
     --dark-color-comment-tag: #dcddde;
     --dark-color-comment-tag-text: #2f3136;
     --dark-color-ext-background: #505033;
@@ -66,6 +68,7 @@
         --color-panel: var(--light-color-panel);
         --color-panel-divider: var(--light-color-panel-divider);
         --color-panel-targeted: var(--light-color-panel-targeted);
+        --color-signature-current: var(--light-color-signature-current);
         --color-comment-tag: var(--light-color-comment-tag);
         --color-comment-tag-text: var(--light-color-comment-tag-text);
         --color-ext-background: var(--light-color-ext-background);
@@ -94,6 +97,7 @@
         --color-panel: var(--dark-color-panel);
         --color-panel-divider: var(--dark-color-panel-divider);
         --color-panel-targeted: var(--dark-color-panel-targeted);
+        --color-signature-current: var(--dark-color-signature-current);
         --color-comment-tag: var(--dark-color-comment-tag);
         --color-comment-tag-text: var(--dark-color-comment-tag-text);
         --color-ext-background: var(--dark-color-ext-background);
@@ -114,6 +118,9 @@
 }
 .tsd p:not(.box, .boxrun, .boxread) {
     padding-bottom: 0;
+}
+.tsd p, .tsd ol, .tsd ul {
+    padding-bottom: initial;
 }
 .tsd ol, .tsd ul {
     margin-top: 0;
@@ -225,6 +232,7 @@ body.light {
     --color-panel: var(--light-color-panel);
     --color-panel-divider: var(--light-color-panel-divider);
     --color-panel-targeted: var(--light-color-panel-targeted);
+    --color-signature-current: var(--light-color-signature-current);
     --color-comment-tag: var(--light-color-comment-tag);
     --color-comment-tag-text: var(--light-color-comment-tag-text);
     --color-ext-background: var(--light-color-ext-background);
@@ -251,6 +259,7 @@ body.dark {
     --color-panel: var(--dark-color-panel);
     --color-panel-divider: var(--dark-color-panel-divider);
     --color-panel-targeted: var(--dark-color-panel-targeted);
+    --color-signature-current: var(--dark-color-signature-current);
     --color-comment-tag: var(--dark-color-comment-tag);
     --color-comment-tag-text: var(--dark-color-comment-tag-text);
     --color-ext-background: var(--dark-color-ext-background);
@@ -1187,6 +1196,12 @@ footer .tsd-legend {
 .tsd-signatures .tsd-signature:first-child {
     border-top-width: 0;
 }
+.tsd-signatures .tsd-signature.current {
+    background-color: var(--color-signature-current);
+}
+.tsd-signatures.active > .tsd-signature {
+    cursor: pointer;
+}
 .tsd-panel > .tsd-signatures {
     margin-left: -15px;
     margin-right: -15px;
@@ -1199,19 +1214,22 @@ footer .tsd-legend {
     left: 20px;
 }
 .tsd-panel > a.anchor + .tsd-signatures {
+    border-top-width: 0;
     margin-top: -20px;
 }
 
 ul.tsd-descriptions {
     position: relative;
     overflow: hidden;
-    transition: height 0.3s;
     margin-top: 0;
     padding: 0;
     padding-top: 10px;
     list-style: none;
 }
 ul.tsd-descriptions.active > .tsd-description {
+    display: none;
+}
+ul.tsd-descriptions.active > .tsd-description.current {
     display: block;
 }
 ul.tsd-descriptions.active > .tsd-description.fade-in {
