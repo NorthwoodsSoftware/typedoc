@@ -16,6 +16,7 @@
     --light-color-panel-targeted: #f4f9fe;
     --light-color-comment-tag: #707070;
     --light-color-comment-tag-text: #fff;
+    --light-color-ext-background: #fefeaa;
     --light-color-ts: #9600ff;
     --light-color-ts-interface: #647f1b;
     --light-color-ts-enum: #937210;
@@ -40,6 +41,7 @@
     --dark-color-panel-targeted: #24394e;
     --dark-color-comment-tag: #dcddde;
     --dark-color-comment-tag-text: #2f3136;
+    --dark-color-ext-background: #505033;
     --dark-color-ts: #c97dff;
     --dark-color-ts-interface: #9cbe3c;
     --dark-color-ts-enum: #d6ab29;
@@ -66,6 +68,7 @@
         --color-panel-targeted: var(--light-color-panel-targeted);
         --color-comment-tag: var(--light-color-comment-tag);
         --color-comment-tag-text: var(--light-color-comment-tag-text);
+        --color-ext-background: var(--light-color-ext-background);
         --color-ts: var(--light-color-ts);
         --color-ts-interface: var(--light-color-ts-interface);
         --color-ts-enum: var(--light-color-ts-enum);
@@ -93,6 +96,7 @@
         --color-panel-targeted: var(--dark-color-panel-targeted);
         --color-comment-tag: var(--dark-color-comment-tag);
         --color-comment-tag-text: var(--dark-color-comment-tag-text);
+        --color-ext-background: var(--dark-color-ext-background);
         --color-ts: var(--dark-color-ts);
         --color-ts-interface: var(--dark-color-ts-interface);
         --color-ts-enum: var(--dark-color-ts-enum);
@@ -223,6 +227,7 @@ body.light {
     --color-panel-targeted: var(--light-color-panel-targeted);
     --color-comment-tag: var(--light-color-comment-tag);
     --color-comment-tag-text: var(--light-color-comment-tag-text);
+    --color-ext-background: var(--light-color-ext-background);
     --color-ts: var(--light-color-ts);
     --color-ts-interface: var(--light-color-ts-interface);
     --color-ts-enum: var(--light-color-ts-enum);
@@ -248,6 +253,7 @@ body.dark {
     --color-panel-targeted: var(--dark-color-panel-targeted);
     --color-comment-tag: var(--dark-color-comment-tag);
     --color-comment-tag-text: var(--dark-color-comment-tag-text);
+    --color-ext-background: var(--dark-color-ext-background);
     --color-ts: var(--dark-color-ts);
     --color-ts-interface: var(--dark-color-ts-interface);
     --color-ts-enum: var(--dark-color-ts-enum);
