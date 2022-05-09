@@ -122,7 +122,7 @@ class DoubleHighlighter {
         for (i = 0; i < this.schemes.size; i++) {
             style.push(`.hl-${i} { color: var(--hl-${i}); }`);
         }
-        style.push("pre, code { background: var(--code-background); }", "");
+        style.push("pre { background: var(--code-background);", "");
 
         return style.join("\n");
     }

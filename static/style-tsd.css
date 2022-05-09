@@ -13,8 +13,8 @@
     --light-color-menu-label: #707070;
     --light-color-panel: var(--light-color-secondary-background);
     --light-color-panel-divider: #eee;
-    --light-color-panel-targeted: #f4f9fe;
-    --light-color-signature-current: var(--light-color-panel-divider);
+    --light-color-panel-targeted: #d6ebff;
+    --light-color-signature-current: #bdd9f4;
     --light-color-comment-tag: #707070;
     --light-color-comment-tag-text: #fff;
     --light-color-ext-background: #fefeaa;
@@ -150,7 +150,7 @@ pre[class*="lang"] code {
 }
 
 code {
-  background-color: inherit;
+  background-color: var(--color-signature-current);
   border-radius: inherit;
 }
 
