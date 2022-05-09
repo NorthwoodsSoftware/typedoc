@@ -18,7 +18,7 @@ export const parameter = (context: DefaultThemeRenderContext, props: Declaration
 
                     <ul class="tsd-descriptions">
                         {props.signatures.map((item) => (
-                            <li class="tsd-description">{context.memberSignatureBody(item, { hideSources: true })}</li>
+                            <li class="tsd-description">{context.memberSignatureBody(item)}</li>
                         ))}
                     </ul>
                 </li>
@@ -52,7 +52,10 @@ export const parameter = (context: DefaultThemeRenderContext, props: Declaration
                             <h5>
                                 {!!item.flags.isRest && <span class="tsd-signature-symbol">...</span>}
                                 {wbr(item.name)}
-                                <span class="tsd-signature-symbol">{!!item.flags.isOptional && "?"}:</span>
+                                <span class="tsd-signature-symbol">
+                                    {!!item.flags.isOptional && "?"}
+                                    {": "}
+                                </span>
                                 function
                             </h5>
 

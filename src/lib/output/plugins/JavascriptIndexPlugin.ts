@@ -6,7 +6,6 @@ import {
     ProjectReflection,
     ReflectionKind,
 } from "../../models/reflections/index";
-import { GroupPlugin } from "../../converter/plugins/GroupPlugin";
 import { Component, RendererComponent } from "../components";
 import { RendererEvent } from "../events";
 import { writeFileSync } from "../../utils";
@@ -40,7 +39,6 @@ export class JavascriptIndexPlugin extends RendererComponent {
         }
 
         const rows: any[] = [];
-        const kinds: { [K in ReflectionKind]?: string } = {};
 
         for (const reflection of event.project.getReflectionsByKind(
             ReflectionKind.All
@@ -66,19 +64,14 @@ export class JavascriptIndexPlugin extends RendererComponent {
             const row: any = {
                 id: rows.length,
                 kind: reflection.kind,
-                name: reflection.name,
+                fullName: reflection.name,
                 url: reflection.url,
                 classes: reflection.cssClasses,
             };
 
             if (parent) {
                 row.parent = parent.getFullName();
-            }
-
-            if (!kinds[reflection.kind]) {
-                kinds[reflection.kind] = GroupPlugin.getKindSingular(
-                    reflection.kind
-                );
+                row.fullName = `${row.parent}.${reflection.name}`;
             }
 
             rows.push(row);
@@ -88,10 +81,15 @@ export class JavascriptIndexPlugin extends RendererComponent {
         builder.pipeline.add(trimmer);
 
         builder.ref("id");
-        builder.field("name", { boost: 10 });
-        builder.field("parent");
+        builder.field("fullName");
 
-        rows.forEach((row) => builder.add(row));
+        rows.forEach((row) => {
+            if (!row.parent) {
+                builder.add(row, { boost: 100 });  // boost top-level reflections
+            } else {
+                builder.add(row);
+            }
+        });
 
         const index = builder.build();
 
@@ -101,14 +99,14 @@ export class JavascriptIndexPlugin extends RendererComponent {
             "search.js"
         );
         const jsonData = JSON.stringify({
-            kinds,
             rows,
             index,
         });
 
         writeFileSync(
             jsonFileName,
-            `window.searchData = JSON.parse(${JSON.stringify(jsonData)});`
+            `/* Copyright (C) 1998-2022 by Northwoods Software Corporation. All Rights Reserved. */
+            window.searchData = JSON.parse(${JSON.stringify(jsonData)});`
         );
     }
 }

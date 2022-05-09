@@ -1,7 +1,7 @@
 import type * as ts from "typescript";
 import type { SomeType } from "..";
 import { ReferenceType, ReflectionType, Type } from "../types";
-import { TraverseCallback, TraverseProperty } from "./abstract";
+import { TraverseCallback, TraverseProperty, Reflection } from "./abstract";
 import { ContainerReflection } from "./container";
 import type { SignatureReflection } from "./signature";
 import type { TypeParameterReflection } from "./type-parameter";
@@ -160,6 +160,54 @@ export class DeclarationReflection extends ContainerReflection {
             this.getSignature ?? []
         );
     }
+
+    /**
+     * @param name  The name to look for. Might contain a hierarchy.
+     */
+     override findReflectionByName(name: string, searchUp?: boolean): Reflection;
+
+     /**
+      * @param names  The name hierarchy to look for.
+      */
+     override findReflectionByName(names: string[], searchUp?: boolean): Reflection;
+ 
+     /**
+      * Try to find a reflection by its name.
+      * For DeclarationReflections, walk up the parent type tree looking for the reflection.
+      *
+      * @return The found reflection or null.
+      */
+     override findReflectionByName(arg: any, searchUp?: boolean): Reflection | undefined {
+         const names: string[] = Array.isArray(arg) ? arg : arg.split('.');
+ 
+         function walkTypeParents(child: DeclarationReflection) {
+             let parents = child.extendedTypes;
+             if (parents) {
+                 let firstParent = parents[0] as ReferenceType;
+                 let parentReflection = firstParent.reflection as DeclarationReflection;
+                 if (parentReflection) {
+                     const ref = parentReflection.findReflectionByName(names, searchUp);
+                     if (ref) {
+                         return ref;
+                     }
+                 }
+             }
+             return null;
+         }
+ 
+         const reflection = this.getChildByName(names);
+         if (reflection) {
+             return reflection;
+         } else {
+             if (searchUp && this.extendedTypes) {
+                 const inheritedReflection = walkTypeParents(this);
+                 if (inheritedReflection !== null) {
+                     return inheritedReflection;
+                 }
+             }
+             return this.parent?.findReflectionByName(names);
+         }
+     }
 
     /**
      * Traverse all potential child reflections of this reflection.

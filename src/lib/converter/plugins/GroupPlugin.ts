@@ -36,6 +36,8 @@ export class GroupPlugin extends ConverterComponent {
         [ReflectionKind.Enum]: "Enumerations",
         [ReflectionKind.EnumMember]: "Enumeration members",
         [ReflectionKind.TypeAlias]: "Type aliases",
+        [ReflectionKind.Accessor]: "Properties",
+        [ReflectionKind.Constant]: "Constants"
     };
 
     /** @internal */

@@ -310,9 +310,9 @@ export class LegendPlugin extends RendererComponent {
             const children = (
                 model.children || ([] as Array<Reflection | undefined>)
             )
-                .concat(...(model.groups?.map((group) => group.children) || []))
-                .concat(...model.getAllSignatures())
-                .concat(model.indexSignature as Reflection)
+                // .concat(...(model.groups?.map((group) => group.children) || []))
+                // .concat(...model.getAllSignatures())
+                // .concat(model.indexSignature as Reflection)
                 .filter((item) => item);
 
             for (const child of children) {

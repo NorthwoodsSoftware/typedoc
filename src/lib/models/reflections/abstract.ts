@@ -48,6 +48,10 @@ export enum ReflectionFlag {
     Const = 1024,
     Let = 2048,
     Readonly = 4096,
+    Virtual = 8192,
+    Override = 16384,
+    Extension = 32768,
+    Storage = 65536,
 }
 
 const relevantFlags: ReflectionFlag[] = [
@@ -61,6 +65,10 @@ const relevantFlags: ReflectionFlag[] = [
     ReflectionFlag.Abstract,
     ReflectionFlag.Const,
     ReflectionFlag.Readonly,
+    ReflectionFlag.Virtual,
+    ReflectionFlag.Override,
+    ReflectionFlag.Extension,
+    ReflectionFlag.Storage,
 ];
 
 /**
@@ -138,6 +146,22 @@ export class ReflectionFlags extends Array<string> {
 
     get isReadonly() {
         return this.hasFlag(ReflectionFlag.Readonly);
+    }
+
+    get isVirtual() {
+        return this.hasFlag(ReflectionFlag.Virtual);
+    }
+
+    get isOverride() {
+        return this.hasFlag(ReflectionFlag.Override);
+    }
+
+    get isExtension() {
+        return this.hasFlag(ReflectionFlag.Extension);
+    }
+
+    get isStorage() {
+        return this.hasFlag(ReflectionFlag.Storage);
     }
 
     setFlag(flag: ReflectionFlag, set: boolean) {
@@ -419,6 +443,9 @@ export abstract class Reflection {
             if (alias === "") {
                 alias = "reflection-" + this.id;
             }
+            if (this.flags && this.flags.isStatic) {
+                alias = 'static-' + alias;
+            }
 
             let target = <Reflection>this;
             while (
@@ -472,11 +499,17 @@ export abstract class Reflection {
         const names: string[] = Array.isArray(arg)
             ? arg
             : splitUnquotedString(arg, ".");
-        const name = names[0];
+        let name = names[0];
         let result: Reflection | undefined;
+        // Did the @link tag use static syntax?
+        let staticLink = false;
+        if (name.indexOf('@static-') === 0) {
+            staticLink = true;
+            name = name.slice(8);
+        }
 
         this.traverse((child) => {
-            if (child.name === name) {
+            if (child.name === name && !(staticLink && !child.flags.isStatic)) {
                 if (names.length <= 1) {
                     result = child;
                 } else {

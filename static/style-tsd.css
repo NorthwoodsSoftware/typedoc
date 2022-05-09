@@ -1,4 +1,5 @@
 @import url("./icons.css");
+@import url(https://fonts.googleapis.com/css?family=Lato:400,900,700);
 
 :root {
     /* Light */
@@ -12,8 +13,11 @@
     --light-color-menu-label: #707070;
     --light-color-panel: var(--light-color-secondary-background);
     --light-color-panel-divider: #eee;
+    --light-color-panel-targeted: #f4f9fe;
+    --light-color-signature-current: var(--light-color-panel-divider);
     --light-color-comment-tag: #707070;
     --light-color-comment-tag-text: #fff;
+    --light-color-ext-background: #fefeaa;
     --light-color-ts: #9600ff;
     --light-color-ts-interface: #647f1b;
     --light-color-ts-enum: #937210;
@@ -35,8 +39,11 @@
     --dark-color-menu-label: #707070;
     --dark-color-panel: var(--dark-color-secondary-background);
     --dark-color-panel-divider: #818181;
+    --dark-color-panel-targeted: #24394e;
+    --dark-color-signature-current: #3d4757;
     --dark-color-comment-tag: #dcddde;
     --dark-color-comment-tag-text: #2f3136;
+    --dark-color-ext-background: #505033;
     --dark-color-ts: #c97dff;
     --dark-color-ts-interface: #9cbe3c;
     --dark-color-ts-enum: #d6ab29;
@@ -60,8 +67,11 @@
         --color-menu-label: var(--light-color-menu-label);
         --color-panel: var(--light-color-panel);
         --color-panel-divider: var(--light-color-panel-divider);
+        --color-panel-targeted: var(--light-color-panel-targeted);
+        --color-signature-current: var(--light-color-signature-current);
         --color-comment-tag: var(--light-color-comment-tag);
         --color-comment-tag-text: var(--light-color-comment-tag-text);
+        --color-ext-background: var(--light-color-ext-background);
         --color-ts: var(--light-color-ts);
         --color-ts-interface: var(--light-color-ts-interface);
         --color-ts-enum: var(--light-color-ts-enum);
@@ -86,8 +96,11 @@
         --color-menu-label: var(--dark-color-menu-label);
         --color-panel: var(--dark-color-panel);
         --color-panel-divider: var(--dark-color-panel-divider);
+        --color-panel-targeted: var(--dark-color-panel-targeted);
+        --color-signature-current: var(--dark-color-signature-current);
         --color-comment-tag: var(--dark-color-comment-tag);
         --color-comment-tag-text: var(--dark-color-comment-tag-text);
+        --color-ext-background: var(--dark-color-ext-background);
         --color-ts: var(--dark-color-ts);
         --color-ts-interface: var(--dark-color-ts-interface);
         --color-ts-enum: var(--dark-color-ts-enum);
@@ -98,6 +111,109 @@
         --icon-filter: var(--dark-icon-filter);
         --external-icon: var(--dark-external-icon);
     }
+}
+/* mostly overrides of Tailwind styling */
+.tsd * {
+    border-style: none;
+}
+.tsd p:not(.box, .boxrun, .boxread) {
+    padding-bottom: 0;
+}
+.tsd p, .tsd ol, .tsd ul {
+    padding-bottom: initial;
+}
+.tsd ol, .tsd ul {
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+.tsd select {
+    color: initial;
+}
+
+code[class*="lang"],
+pre[class*="lang"],
+pre[class*="lang"] code {
+  background: inherit;
+  color: inherit;
+  font-size: inherit;
+  text-shadow: inherit;
+  font-family: inherit;
+  direction: inherit;
+  text-align: inherit;
+  white-space: inherit;
+  word-spacing: inherit;
+  word-break: inherit;
+  line-height: inherit;
+  -moz-tab-size: inherit;
+  -o-tab-size: inherit;
+  tab-size: inherit;
+  -webkit-hyphens: inherit;
+  -ms-hyphens: inherit;
+  hyphens: inherit;
+}
+
+code {
+  background-color: inherit;
+  border-radius: inherit;
+}
+
+/* Displays a box around text */
+.box, .boxrun, .boxread {
+    border: 1px solid #BBB;
+    padding: 0.6em;
+    background: var(--color-background);
+}
+  
+/* Copyright fineprint on right side of header */
+.top-copyright {
+    float: right;
+    font-size: 0.7em;
+}
+
+/* Copyright at bottom of page */
+.bottom-copyright {
+    margin-bottom: 15px;
+}
+
+/* Highlights selected hash */
+.tsd-panel.targeted {
+    background-color: var(--color-panel-targeted);
+}
+  
+/* Header overrides */
+.h1, .h2, .h3, .h4, .h5, .h6, h1, h2, h3, h4, h5, h6 .tsd-index-panel h3 {
+    font-weight: bold;
+    line-height: inherit;
+}
+  
+.tsd-page-title h1 {
+    font-size: 2em;
+    margin: 0.67em 0;
+}
+  
+h2 {
+    font-size: 1.5em;
+    margin: 0.83em 0;
+}
+  
+h3 {
+    font-size: 1.17em;
+    margin: 1em 0;
+}
+  
+h4, .tsd-index-panel h3 {
+    font-size: 1em;
+    margin: 1.33em 0;
+}
+  
+h5 {
+    font-size: 0.83em;
+    margin: 1.67em 0;
+}
+  
+h6 {
+    font-size: 0.67em;
+    margin: 2.33em 0;
 }
 
 body {
@@ -115,8 +231,11 @@ body.light {
     --color-menu-label: var(--light-color-menu-label);
     --color-panel: var(--light-color-panel);
     --color-panel-divider: var(--light-color-panel-divider);
+    --color-panel-targeted: var(--light-color-panel-targeted);
+    --color-signature-current: var(--light-color-signature-current);
     --color-comment-tag: var(--light-color-comment-tag);
     --color-comment-tag-text: var(--light-color-comment-tag-text);
+    --color-ext-background: var(--light-color-ext-background);
     --color-ts: var(--light-color-ts);
     --color-ts-interface: var(--light-color-ts-interface);
     --color-ts-enum: var(--light-color-ts-enum);
@@ -139,8 +258,11 @@ body.dark {
     --color-menu-label: var(--dark-color-menu-label);
     --color-panel: var(--dark-color-panel);
     --color-panel-divider: var(--dark-color-panel-divider);
+    --color-panel-targeted: var(--dark-color-panel-targeted);
+    --color-signature-current: var(--dark-color-signature-current);
     --color-comment-tag: var(--dark-color-comment-tag);
     --color-comment-tag-text: var(--dark-color-comment-tag-text);
+    --color-ext-background: var(--dark-color-ext-background);
     --color-ts: var(--dark-color-ts);
     --color-ts-interface: var(--dark-color-ts-interface);
     --color-ts-enum: var(--dark-color-ts-enum);
@@ -152,82 +274,8 @@ body.dark {
     --external-icon: var(--dark-external-icon);
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-    line-height: 1.2;
-}
-
-h1 {
-    font-size: 2em;
-    margin: 0.67em 0;
-}
-
-h2 {
-    font-size: 1.5em;
-    margin: 0.83em 0;
-}
-
-h3 {
-    font-size: 1.17em;
-    margin: 1em 0;
-}
-
-h4,
-.tsd-index-panel h3 {
-    font-size: 1em;
-    margin: 1.33em 0;
-}
-
-h5 {
-    font-size: 0.83em;
-    margin: 1.67em 0;
-}
-
-h6 {
-    font-size: 0.67em;
-    margin: 2.33em 0;
-}
-
-pre {
-    white-space: pre;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-}
-
-dl,
-menu,
-ol,
-ul {
-    margin: 1em 0;
-}
-
-dd {
-    margin: 0 0 0 40px;
-}
-
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 40px;
-}
-@media (max-width: 640px) {
-    .container {
-        padding: 0 20px;
-    }
-}
-
-.container-main {
-    padding-bottom: 200px;
-}
-
 .row {
-    display: flex;
     position: relative;
-    margin: 0 -10px;
 }
 .row:after {
     visibility: hidden;
@@ -241,7 +289,7 @@ dd {
 .col-8 {
     box-sizing: border-box;
     float: left;
-    padding: 0 10px;
+    padding: 0 5px;
 }
 
 .col-4 {
@@ -356,7 +404,7 @@ ul.tsd-descriptions > li > :last-child > :last-child > :last-child,
 body {
     background: var(--color-background);
     font-family: "Segoe UI", sans-serif;
-    font-size: 16px;
+    font-size: 14px;
     color: var(--color-text);
 }
 
@@ -366,6 +414,7 @@ a {
 }
 a:hover {
     text-decoration: underline;
+    box-shadow: none;
 }
 a.external[target="_blank"] {
     background-image: var(--external-icon);
@@ -379,11 +428,12 @@ pre {
     font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
     padding: 0.2em;
     margin: 0;
-    font-size: 14px;
+    font-size: 13px;
 }
 
 pre {
     padding: 10px;
+    border: 1px solid #BBB;
 }
 pre code {
     padding: 0;
@@ -421,7 +471,23 @@ blockquote {
 .tsd-typography ol {
     margin: 1em 0;
 }
+.tsd-typography ul ul,
+.tsd-typography ul ol,
+.tsd-typography ul p,
+.tsd-typography ol ul,
+.tsd-typography ol ol,
+.tsd-typography ol p {
+    margin: 0 0;
+}
 
+@media (min-width: 1025px) {
+    html .col-content {
+      width: 80%;
+    }
+    html .col-menu {
+      width: 20%;
+    }
+  }
 @media (min-width: 901px) and (max-width: 1024px) {
     html .col-content {
         width: 72%;
@@ -474,20 +540,12 @@ blockquote {
         animation: fade-in 0.4s;
     }
 
-    .to-has-menu :is(header, footer, .col-content) {
-        animation: shift-to-left 0.4s;
-    }
-
     .to-has-menu .col-menu {
         animation: pop-in-from-right 0.4s;
     }
 
     .from-has-menu .overlay {
         animation: fade-out 0.4s;
-    }
-
-    .from-has-menu :is(header, footer, .col-content) {
-        animation: unshift-to-left 0.4s;
     }
 
     .from-has-menu .col-menu {
@@ -499,9 +557,6 @@ blockquote {
     }
     .has-menu .overlay {
         visibility: visible;
-    }
-    .has-menu :is(header, footer, .col-content) {
-        transform: translate(-25%, 0);
     }
     .has-menu .col-menu {
         visibility: visible;
@@ -515,8 +570,11 @@ blockquote {
     }
 }
 
+.tsd-page-header {
+    position: relative;
+}
 .tsd-page-title {
-    padding: 70px 0 20px 0;
+    padding: 60px 0 20px 0;
     margin: 0 0 40px 0;
     background: var(--color-panel);
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.35);
@@ -546,6 +604,7 @@ blockquote {
 
 dl.tsd-comment-tags {
     overflow: hidden;
+    margin: 1em 0 1em 0;
 }
 dl.tsd-comment-tags dt {
     float: left;
@@ -558,7 +617,7 @@ dl.tsd-comment-tags dt {
     font-weight: normal;
 }
 dl.tsd-comment-tags dd {
-    margin: 0 0 10px 0;
+    margin: 0 0 3px 0;
 }
 dl.tsd-comment-tags dd:before,
 dl.tsd-comment-tags dd:after {
@@ -593,6 +652,10 @@ dl.tsd-comment-tags p {
 }
 
 .toggle-inherited .tsd-is-inherited {
+    display: none;
+}
+
+.toggle-only-exported .tsd-is-not-exported {
     display: none;
 }
 
@@ -664,7 +727,7 @@ footer .tsd-legend {
     display: inline-block;
     width: 25%;
     padding: 0;
-    font-size: 16px;
+    font-size: 14px;
     list-style: none;
     line-height: 1.333em;
     vertical-align: top;
@@ -685,14 +748,14 @@ footer .tsd-legend {
 }
 
 .tsd-index-panel .tsd-index-content {
-    margin-bottom: -30px !important;
+    margin-bottom: 0px !important;
 }
 .tsd-index-panel .tsd-index-section {
-    margin-bottom: 30px !important;
+    margin-bottom: 0px !important;
 }
 .tsd-index-panel h3 {
-    margin: 0 -20px 10px -20px;
-    padding: 0 20px 10px 20px;
+    margin: 0 -15px 10px -15px;
+    padding: 0 15px 10px 15px;
     border-bottom: 1px solid var(--color-panel-divider);
 }
 .tsd-index-panel ul.tsd-index-list {
@@ -701,16 +764,16 @@ footer .tsd-legend {
     -ms-column-count: 3;
     -o-column-count: 3;
     column-count: 3;
-    -webkit-column-gap: 20px;
-    -moz-column-gap: 20px;
-    -ms-column-gap: 20px;
-    -o-column-gap: 20px;
-    column-gap: 20px;
+    -webkit-column-gap: 15px;
+    -moz-column-gap: 15px;
+    -ms-column-gap: 15px;
+    -o-column-gap: 15px;
+    column-gap: 15px;
     padding: 0;
     list-style: none;
     line-height: 1.333em;
 }
-@media (max-width: 900px) {
+@media (max-width: 640px) {
     .tsd-index-panel ul.tsd-index-list {
         -webkit-column-count: 1;
         -moz-column-count: 1;
@@ -719,7 +782,7 @@ footer .tsd-legend {
         column-count: 1;
     }
 }
-@media (min-width: 901px) and (max-width: 1024px) {
+@media (min-width: 641px) and (max-width: 1024px) {
     .tsd-index-panel ul.tsd-index-list {
         -webkit-column-count: 2;
         -moz-column-count: 2;
@@ -729,6 +792,11 @@ footer .tsd-legend {
     }
 }
 .tsd-index-panel ul.tsd-index-list li {
+    -webkit-column-break-inside: avoid;
+    -moz-column-break-inside: avoid;
+    -ms-column-break-inside: avoid;
+    -o-column-break-inside: avoid;
+    column-break-inside: avoid;
     -webkit-page-break-inside: avoid;
     -moz-page-break-inside: avoid;
     -ms-page-break-inside: avoid;
@@ -778,7 +846,7 @@ footer .tsd-legend {
 
 .tsd-anchor {
     position: absolute;
-    top: -100px;
+    top: -15px;
 }
 
 .tsd-member {
@@ -787,7 +855,6 @@ footer .tsd-legend {
 .tsd-member .tsd-anchor + h3 {
     margin-top: 0;
     margin-bottom: 0;
-    border-bottom: none;
 }
 .tsd-member [data-tsd-kind] {
     color: var(--color-ts);
@@ -805,17 +872,12 @@ footer .tsd-legend {
     color: var(--color-ts-private);
 }
 
-.tsd-navigation {
-    margin: 0 0 0 40px;
-}
 .tsd-navigation a {
     display: block;
     padding-top: 2px;
     padding-bottom: 2px;
-    border-left: 2px solid transparent;
     color: var(--color-text);
     text-decoration: none;
-    transition: border-left-color 0.1s;
 }
 .tsd-navigation a:hover {
     text-decoration: underline;
@@ -830,7 +892,7 @@ footer .tsd-legend {
 }
 
 .tsd-navigation.primary {
-    padding-bottom: 40px;
+    padding-bottom: 10px;
 }
 .tsd-navigation.primary a {
     display: block;
@@ -864,6 +926,10 @@ footer .tsd-legend {
 .tsd-navigation.primary li.current > a {
     font-weight: bold;
 }
+.tsd-navigation.primary li.globals > a {
+    font-size: 1.17em;
+    color: var(--color-link);
+  }
 .tsd-navigation.primary li.label span {
     display: block;
     padding: 20px 0 6px 5px;
@@ -874,17 +940,6 @@ footer .tsd-legend {
     padding-top: 20px;
 }
 
-.tsd-navigation.secondary {
-    max-height: calc(100vh - 1rem - 40px);
-    overflow: auto;
-    position: sticky;
-    top: calc(0.5rem + 40px);
-    transition: 0.3s;
-}
-.tsd-navigation.secondary.tsd-navigation--toolbar-hide {
-    max-height: calc(100vh - 1rem);
-    top: 0.5rem;
-}
 .tsd-navigation.secondary ul {
     transition: opacity 0.2s;
 }
@@ -906,31 +961,42 @@ footer .tsd-legend {
 .tsd-navigation.secondary ul li li li li li li a {
     padding-left: 125px;
 }
-.tsd-navigation.secondary ul.current a {
-    border-left-color: var(--color-panel-divider);
-}
-.tsd-navigation.secondary li.focus > a,
-.tsd-navigation.secondary ul.current li.focus > a {
-    border-left-color: var(--color-menu-divider-focus);
-}
-.tsd-navigation.secondary li.current {
-    margin-top: 20px;
-    margin-bottom: 20px;
-    border-left-color: var(--color-panel-divider);
-}
 .tsd-navigation.secondary li.current > a {
     font-weight: bold;
 }
 
 @media (min-width: 901px) {
     .menu-sticky-wrap {
-        position: static;
+      position: static;
     }
-}
+    .no-csspositionsticky .menu-sticky-wrap.sticky {
+      position: fixed;
+    }
+    .no-csspositionsticky .menu-sticky-wrap.sticky-current {
+      position: fixed;
+    }
+    .no-csspositionsticky .menu-sticky-wrap.sticky-current ul.before-current,
+    .no-csspositionsticky .menu-sticky-wrap.sticky-current ul.after-current {
+      opacity: 0;
+    }
+    .no-csspositionsticky .menu-sticky-wrap.sticky-bottom {
+      position: absolute;
+      top: auto !important;
+      left: auto !important;
+      bottom: 0;
+      right: 0;
+    }
+    .csspositionsticky .menu-sticky-wrap.sticky {
+      position: sticky;
+    }
+    .csspositionsticky .menu-sticky-wrap.sticky-current {
+      position: sticky;
+    }
+  }
 
 .tsd-panel {
-    margin: 20px 0;
-    padding: 20px;
+    margin: 15px 0;
+    padding: 15px;
     background-color: var(--color-panel);
     box-shadow: 0 0 4px rgba(0, 0, 0, 0.25);
 }
@@ -940,8 +1006,8 @@ footer .tsd-legend {
 .tsd-panel > h1,
 .tsd-panel > h2,
 .tsd-panel > h3 {
-    margin: 1.5em -20px 10px -20px;
-    padding: 0 20px 10px 20px;
+    margin: 1.5em -15px 10px -15px;
+    padding: 0 15px 10px 15px;
     border-bottom: 1px solid var(--color-panel-divider);
 }
 .tsd-panel > h1.tsd-before-signature,
@@ -973,9 +1039,12 @@ footer .tsd-legend {
 .tsd-panel table tr:nth-child(even) {
     background: var(--color-secondary-background);
 }
+.tsd-panel.tsd-extension {
+    background-color: rgba(255, 255, 0, 0.33);
+}
 
 .tsd-panel-group {
-    margin: 60px 0;
+    margin: 20px 0;
 }
 .tsd-panel-group > h1,
 .tsd-panel-group > h2,
@@ -1001,7 +1070,6 @@ footer .tsd-legend {
 #tsd-search .field input {
     box-sizing: border-box;
     position: relative;
-    top: -50px;
     z-index: 1;
     width: 100%;
     padding: 0 10px;
@@ -1054,6 +1122,9 @@ footer .tsd-legend {
     color: var(--color-text-aside);
     font-weight: normal;
 }
+#tsd-search .results span.match {
+    font-weight: 500;
+}
 #tsd-search.has-focus {
     background-color: var(--color-panel-divider);
 }
@@ -1080,7 +1151,7 @@ footer .tsd-legend {
     padding: 10px;
     border: 1px solid var(--color-panel-divider);
     font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
-    font-size: 14px;
+    font-size: 13px;
     overflow-x: auto;
 }
 .tsd-signature.tsd-kind-icon {
@@ -1091,8 +1162,8 @@ footer .tsd-legend {
     left: 10px;
 }
 .tsd-panel > .tsd-signature {
-    margin-left: -20px;
-    margin-right: -20px;
+    margin-left: -15px;
+    margin-right: -15px;
     border-width: 1px 0;
 }
 .tsd-panel > .tsd-signature.tsd-kind-icon {
@@ -1115,7 +1186,7 @@ footer .tsd-legend {
 .tsd-signatures {
     padding: 0;
     margin: 0 0 1em 0;
-    border: 1px solid var(--color-panel-divider);
+    border-bottom: 1px solid var(--color-panel-divider);
 }
 .tsd-signatures .tsd-signature {
     margin: 0;
@@ -1126,14 +1197,14 @@ footer .tsd-legend {
     border-top-width: 0;
 }
 .tsd-signatures .tsd-signature.current {
-    background-color: var(--color-panel-divider);
+    background-color: var(--color-signature-current);
 }
 .tsd-signatures.active > .tsd-signature {
     cursor: pointer;
 }
 .tsd-panel > .tsd-signatures {
-    margin-left: -20px;
-    margin-right: -20px;
+    margin-left: -15px;
+    margin-right: -15px;
     border-width: 1px 0;
 }
 .tsd-panel > .tsd-signatures .tsd-signature.tsd-kind-icon {
@@ -1150,7 +1221,9 @@ footer .tsd-legend {
 ul.tsd-descriptions {
     position: relative;
     overflow: hidden;
+    margin-top: 0;
     padding: 0;
+    padding-top: 10px;
     list-style: none;
 }
 ul.tsd-descriptions.active > .tsd-description {
@@ -1175,8 +1248,8 @@ ul.tsd-descriptions.active > .tsd-description.fade-out {
 ul.tsd-descriptions h4,
 ul.tsd-descriptions .tsd-index-panel h3,
 .tsd-index-panel ul.tsd-descriptions h3 {
-    font-size: 16px;
-    margin: 1em 0 0.5em 0;
+    font-size: 14px;
+    margin: 0.5em 0;
 }
 
 ul.tsd-parameters,
@@ -1188,20 +1261,20 @@ ul.tsd-type-parameters {
 ul.tsd-parameters > li.tsd-parameter-signature,
 ul.tsd-type-parameters > li.tsd-parameter-signature {
     list-style: none;
-    margin-left: -20px;
+    margin-left: -15px;
 }
 ul.tsd-parameters h5,
 ul.tsd-type-parameters h5 {
-    font-size: 16px;
-    margin: 1em 0 0.5em 0;
+    font-size: 14px;
+    margin: 0.5em 0;
 }
-ul.tsd-parameters .tsd-comment,
-ul.tsd-type-parameters .tsd-comment {
-    margin-top: -0.5em;
+ul.tsd-parameters .tsd-comment p,
+ul.tsd-type-parameters .tsd-comment p {
+    margin: 0.5em 0;
 }
 
 .tsd-sources {
-    font-size: 14px;
+    font-size: 13px;
     color: var(--color-text-aside);
     margin: 0 0 1em 0;
 }
@@ -1219,7 +1292,7 @@ ul.tsd-type-parameters .tsd-comment {
 }
 
 .tsd-page-toolbar {
-    position: fixed;
+    position: absolute;
     z-index: 1;
     top: 0;
     left: 0;
@@ -1228,7 +1301,6 @@ ul.tsd-type-parameters .tsd-comment {
     color: var(--color-toolbar-text);
     background: var(--color-toolbar);
     border-bottom: 1px solid var(--color-panel-divider);
-    transition: transform 0.3s linear;
 }
 .tsd-page-toolbar a {
     color: var(--color-toolbar-text);
@@ -1401,6 +1473,8 @@ img {
     margin-left: 10px;
     vertical-align: middle;
     color: var(--color-text);
+    display: inline-flex;
+    height: 1.17em;
 }
 
 .tsd-anchor-icon svg {
@@ -1411,4 +1485,4 @@ img {
 
 .tsd-anchor-link:hover > .tsd-anchor-icon svg {
     visibility: visible;
-}
+} 

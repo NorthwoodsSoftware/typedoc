@@ -27,11 +27,12 @@ export enum ReflectionKind {
     TypeAlias = 0x400000,
     Event = 0x800000,
     Reference = 0x1000000,
+    Constant = 0x2000000
 }
 
 /** @hidden */
 export namespace ReflectionKind {
-    export const All = ReflectionKind.Reference * 2 - 1;
+    export const All = ReflectionKind.Constant * 2 - 1;
 
     export const ClassOrInterface =
         ReflectionKind.Class | ReflectionKind.Interface;
@@ -68,5 +69,6 @@ export namespace ReflectionKind {
         ReflectionKind.IndexSignature |
         ReflectionKind.Property |
         ReflectionKind.Method |
-        ReflectionKind.Constructor;
+        ReflectionKind.Constructor |
+        ReflectionKind.Constant;
 }

@@ -68,6 +68,7 @@ export interface TypeDocOptionMap {
     excludeProtected: boolean;
     excludeNotDocumented: boolean;
     excludeInternal: boolean;
+    excludeInherited: boolean;
     disableSources: boolean;
     includes: string;
     media: string;
@@ -100,6 +101,11 @@ export interface TypeDocOptionMap {
     gaSite: string;
     githubPages: boolean;
     hideGenerator: boolean;
+    hideGoJSNav: boolean;
+    indexTitle: string;
+    topCopyright: string;
+    showInheritedDefault: boolean;
+    disableOutputCheck: boolean;
     hideLegend: boolean;
     cleanOutputDir: boolean;
 
@@ -109,6 +115,7 @@ export interface TypeDocOptionMap {
     plugin: string[];
     logger: unknown; // string | Function
     logLevel: typeof LogLevel;
+    jsDocLinks: boolean;
     markedOptions: unknown;
     compilerOptions: unknown;
 

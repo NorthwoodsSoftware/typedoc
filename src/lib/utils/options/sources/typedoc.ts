@@ -71,6 +71,11 @@ export function addTypeDocOptions(options: Pick<Options, "addDeclaration">) {
         type: ParameterType.Boolean,
     });
     options.addDeclaration({
+        name: "excludeInherited",
+        help: "Ignores inherited variables and methods",
+        type: ParameterType.Boolean,
+    });
+    options.addDeclaration({
         name: "disableSources",
         help: "Disable setting the source of a reflection when documenting it.",
         type: ParameterType.Boolean,
@@ -272,6 +277,33 @@ export function addTypeDocOptions(options: Pick<Options, "addDeclaration">) {
         type: ParameterType.Boolean,
     });
     options.addDeclaration({
+        name: "hideGoJSNav",
+        help:
+            "Do not print the GoJS site navigation at the top of the page.",
+        type: ParameterType.Boolean,
+    });
+    options.addDeclaration({
+        name: "indexTitle",
+        help:
+            "Sets the title to be displayed for the index and navigation.",
+        type: ParameterType.String,
+        defaultValue: "Index",
+    });
+    options.addDeclaration({
+        name: "topCopyright",
+        help:
+            "Sets the information to display in the top copyright before the version number.",
+        type: ParameterType.String,
+        defaultValue: "",
+    });
+    options.addDeclaration({
+        name: "showInheritedDefault",
+        help:
+            "TODO",
+        type: ParameterType.Boolean,
+        defaultValue: false,
+    });
+    options.addDeclaration({
         name: "cleanOutputDir",
         help: "If set, TypeDoc will remove the output directory before writing output.",
         type: ParameterType.Boolean,
@@ -347,6 +379,12 @@ export function addTypeDocOptions(options: Pick<Options, "addDeclaration">) {
     options.addDeclaration({
         name: "treatWarningsAsErrors",
         help: "If set, warnings will be treated as errors.",
+        type: ParameterType.Boolean,
+    });
+    options.addDeclaration({
+        name: "jsDocLinks",
+        help:
+            "Parse JSDoc-style @link inline tags.",
         type: ParameterType.Boolean,
     });
     options.addDeclaration({

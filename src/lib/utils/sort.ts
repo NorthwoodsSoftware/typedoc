@@ -116,11 +116,12 @@ const sorts: Record<
 
             ReflectionKind.Constructor,
             ReflectionKind.Event,
-            ReflectionKind.Property,
             ReflectionKind.Variable,
             ReflectionKind.Function,
             ReflectionKind.Accessor,
+            ReflectionKind.Property,
             ReflectionKind.Method,
+            ReflectionKind.Constant,
             ReflectionKind.ObjectLiteral,
 
             ReflectionKind.Parameter,

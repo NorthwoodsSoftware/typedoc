@@ -102,15 +102,25 @@ export class ProjectReflection extends ContainerReflection {
         const names: string[] = Array.isArray(arg)
             ? arg
             : splitUnquotedString(arg, ".");
-        const name = names.pop();
+        let name = names[names.length - 1];
+        // Did the @link tag use static syntax?
+        let staticLink = false;
+        if (name?.indexOf('@static-') === 0) {
+            staticLink = true;
+            name = name.slice(8);
+        }
 
         search: for (const key in this.reflections) {
             const reflection = this.reflections[key];
-            if (reflection.name !== name) {
+            if (reflection.name !== name || (staticLink && !reflection.flags.isStatic)) {
                 continue;
             }
+            if (names.length === 1 && reflection.parent !== this) {
+                continue; // looking for top-level reflection, this one has non-root parent
+            }
 
-            let depth = names.length - 1;
+            // CUSTOM: We don't use namespace/module, so depth is 1 less than normal
+            let depth = names.length - 2;
             let target: Reflection | undefined = reflection;
             while ((target = target.parent) && depth >= 0) {
                 if (target.name !== names[depth]) {

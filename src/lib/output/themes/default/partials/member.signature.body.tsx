@@ -1,14 +1,12 @@
 import type { DefaultThemeRenderContext } from "../DefaultThemeRenderContext";
 import { JSX, Raw } from "../../../../utils";
-import { ReflectionType, SignatureReflection } from "../../../../models";
+import { ReflectionKind, ReflectionType, SignatureReflection } from "../../../../models";
 import { renderFlags } from "../../lib";
 export const memberSignatureBody = (
     context: DefaultThemeRenderContext,
-    props: SignatureReflection,
-    { hideSources = false }: { hideSources?: boolean } = {}
+    props: SignatureReflection
 ) => (
     <>
-        {!hideSources && context.memberSources(props)}
         {context.comment(props)}
 
         {!!props.typeParameters && (
@@ -43,7 +41,7 @@ export const memberSignatureBody = (
                 </ul>
             </>
         )}
-        {props.type && (
+        {props.type && !(props.parent.kind === ReflectionKind.Accessor) && (
             <>
                 <h4 class="tsd-returns-title">
                     {"Returns "}

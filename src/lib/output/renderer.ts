@@ -173,6 +173,18 @@ export class Renderer extends ChildableComponent<
     @BindOption("darkHighlightTheme")
     darkTheme!: ShikiTheme;
 
+    @BindOption("hideGoJSNav")
+    hideGoJSNav!: boolean;
+
+    @BindOption("indexTitle")
+    indexTitle!: string;
+
+    @BindOption("topCopyright")
+    topCopyright!: string;
+
+    @BindOption("showInheritedDefault")
+    showInheritedDefault!: boolean;
+
     /**
      * Define a new theme that can be used to render output.
      * This API will likely be changing in TypeDoc 0.23.

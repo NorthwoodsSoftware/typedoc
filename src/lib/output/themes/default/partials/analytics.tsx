@@ -3,21 +3,41 @@ import { JSX } from "../../../../utils";
 
 export function analytics(context: DefaultThemeRenderContext) {
     const gaID = context.options.getValue("gaID");
-    const gaSite = context.options.getValue("gaSite");
     if (!gaID) return;
 
     const script = `
-(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-ga('create', '${gaID}', '${gaSite}');
-ga('send', 'pageview');
-`.trim();
+      <script async src="https://www.googletagmanager.com/gtag/js?id=${gaID}"></script>
+      <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date()); gtag('config', '${gaID}');
+        var getOutboundLink = function(url, label) {
+            gtag('event', 'click', {
+            'event_category': 'outbound',
+            'event_label': label,
+            'transport_type': 'beacon'
+            });
+        }
+        // topnav
+        var topButton = document.getElementById("topnavButton");
+        var topnavList = document.getElementById("topnavList");
+        topButton.addEventListener("click", function() {
+            this.classList.toggle("active");
+            topnavList.classList.toggle("hidden");
+            document.getElementById("topnavOpen").classList.toggle("hidden");
+            document.getElementById("topnavClosed").classList.toggle("hidden");
+        });
+
+        document.getElementById("contactBtn").addEventListener("click", function() {
+            getOutboundLink('https://www.nwoods.com/contact.html', 'contact');
+        });
+
+        document.getElementById("buyBtn").addEventListener("click", function() {
+            getOutboundLink('https://www.nwoods.com/sales/index.html', 'buy');
+        });
+      </script>`.trim();
 
     return (
-        <script>
-            <JSX.Raw html={script} />
-        </script>
+      <JSX.Raw html={script} />
     );
 }

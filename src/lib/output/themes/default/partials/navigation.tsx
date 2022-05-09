@@ -27,7 +27,7 @@ function primaryNavigation(context: DefaultThemeRenderContext, props: PageEvent<
             <nav class="tsd-navigation primary">
                 <ul>
                     <li class={classNames({ current: props.model.isProject() })}>
-                        <a href={context.urlTo(props.model.project)}>{projectLinkName}</a>
+                        <a href={context.urlTo(props.model.project)}>{context.options.getValue("indexTitle")}</a>
                     </li>
                     {int.map(link)}
                 </ul>
@@ -91,6 +91,8 @@ function secondaryNavigation(context: DefaultThemeRenderContext, props: PageEven
         <ul>
             {children
                 .filter((child) => !child.kindOf(ReflectionKind.SomeModule))
+                .filter((child) => !context.containsTag("unindexed", child))
+                .filter((child) => !child.flags.isExtension && !child.flags.isStorage)
                 .map((child) => {
                     return (
                         <li class={child.cssClasses}>
