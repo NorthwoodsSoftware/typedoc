@@ -79,14 +79,10 @@ export function header(context: DefaultThemeRenderContext, props: PageEvent<Refl
                                                 </li>
                                             </ul>
                                         </div>{" "}
-                                        {!context.options.getValue("excludeInherited") && (
-                                            <>
-                                                <input type="checkbox" id="tsd-filter-inherited" checked={context.options.getValue("showInheritedDefault")} />
-                                                <label class="tsd-widget" for="tsd-filter-inherited">
-                                                    Inherited
-                                                </label>
-                                            </>
-                                        )}
+                                        <input type="checkbox" id="tsd-filter-inherited" checked={context.options.getValue("showInheritedDefault")} />
+                                        <label class="tsd-widget" for="tsd-filter-inherited">
+                                            Inherited
+                                        </label>
                                         {!context.options.getValue("excludeExternals") && (
                                             <>
                                                 <input type="checkbox" id="tsd-filter-externals" checked={true} />

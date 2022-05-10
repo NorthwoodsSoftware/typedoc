@@ -12,6 +12,7 @@ import { comment } from "./partials/comment";
 import { footer } from "./partials/footer";
 import { header } from "./partials/header";
 import { hierarchy } from "./partials/hierarchy";
+import { inherited } from "./partials/inherited";
 import { member } from "./partials/member";
 import { memberDeclaration } from "./partials/member.declaration";
 import { memberGetterSetter } from "./partials/member.getterSetter";
@@ -125,6 +126,7 @@ export class DefaultThemeRenderContext {
     header = bind(header, this);
     hierarchy = bind(hierarchy, this);
     index = bind(index, this);
+    inherited = bind(inherited, this);
     member = bind(member, this);
     memberDeclaration = bind(memberDeclaration, this);
     memberGetterSetter = bind(memberGetterSetter, this);

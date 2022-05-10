@@ -1,5 +1,6 @@
 import type * as ts from "typescript";
 import type { SomeType } from "..";
+import type { ReflectionGroup } from "../ReflectionGroup";
 import { ReferenceType, ReflectionType, Type } from "../types";
 import { TraverseCallback, TraverseProperty, Reflection } from "./abstract";
 import { ContainerReflection } from "./container";
@@ -128,6 +129,21 @@ export class DeclarationReflection extends ContainerReflection {
      * rendered in templates.
      */
     typeHierarchy?: DeclarationHierarchy;
+
+    /**
+     * A list of all reflection names inherited by this declaration.
+     * This is used temporarily before reflections have fully resolved.
+     * 
+     * Applies to interface and class members, only when excludeInherited is true.
+     */
+     inheritedNames?: Set<string>;
+
+    /**
+     * A grouping of all reflections inherited by this declaration.
+     * 
+     * Applies to interface and class members, only when excludeInherited is true.
+     */
+    inheritedMembers?: ReflectionGroup[];
 
     override hasGetterOrSetter(): boolean {
         return !!this.getSignature || !!this.setSignature;

@@ -11,6 +11,24 @@
             "skipFiles": ["<node_internals>/**"],
             "type": "pwa-node",
             "sourceMaps": true
-        }
+        },
+        {
+            "cwd": "${workspaceRoot}",
+            "name": "Debug gojs-internal docs",
+            "type": "node",
+            "request": "launch",
+            "runtimeArgs": [
+              "--inspect-brk",
+              "${workspaceRoot}/bin/typedoc",
+              "--options",
+              "${workspaceRoot}/../gojs-internal/buildTS/typedoc.json",
+              "--tsconfig",
+              "${workspaceRoot}/../gojs-internal/buildTS/tsconfig.typedoc.json",
+              "--entryPoints",
+              "${workspaceRoot}/../gojs-internal/out/all-doc.ts"
+            ],
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
+          }
     ]
 }

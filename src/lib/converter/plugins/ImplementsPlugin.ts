@@ -7,11 +7,13 @@ import {
     SignatureReflection,
 } from "../../models/reflections/index";
 import { ReferenceType, Type } from "../../models/types";
+import { sortReflections, SortStrategy } from "../../utils";
 import { filterMap, zip } from "../../utils/array";
 import { Component, ConverterComponent } from "../components";
 import type { Context } from "../context";
 import { Converter } from "../converter";
 import { copyComment } from "../utils/reflections";
+import { GroupPlugin } from "./GroupPlugin";
 
 /**
  * A plugin that detects interface implementations of functions and
@@ -21,6 +23,7 @@ import { copyComment } from "../utils/reflections";
 export class ImplementsPlugin extends ConverterComponent {
     private resolved = new WeakSet<Reflection>();
     private postponed = new WeakMap<Reflection, Set<DeclarationReflection>>();
+    private sortStrategy: SortStrategy[] = ["kind", "instance-first", "alphabeticalFull"];
 
     /**
      * Create a new ImplementsPlugin instance.
@@ -150,6 +153,7 @@ export class ImplementsPlugin extends ConverterComponent {
             }
         );
 
+        
         for (const parent of extendedTypes) {
             for (const parentMember of parent.reflection.children ?? []) {
                 const child = reflection.children?.find(
@@ -183,6 +187,21 @@ export class ImplementsPlugin extends ConverterComponent {
                     copyComment(child, parentMember);
                 }
             }
+        }
+
+        if (reflection.inheritedNames) {
+            var inheritedMems: DeclarationReflection[] = [];
+
+            for (const name of reflection.inheritedNames) {
+                var refl = reflection.findReflectionByName(name, true);
+                if (refl instanceof DeclarationReflection) inheritedMems.push(refl);
+            }
+
+            // sort and group inherited members
+            sortReflections(inheritedMems, this.sortStrategy);
+            const groups = GroupPlugin.getReflectionGroups(inheritedMems);
+            reflection.inheritedMembers = groups;
+            reflection.inheritedNames = undefined;
         }
     }
 
@@ -254,6 +273,7 @@ export class ImplementsPlugin extends ConverterComponent {
             });
             // Remove the types marked as undocumented
             reflection.implementedTypes = reflection.implementedTypes.filter(elt => removeList.indexOf(elt as ReferenceType) < 0);
+            if (reflection.implementedTypes.length === 0) reflection.implementedTypes = undefined;
         }
 
         if (
@@ -466,6 +486,14 @@ function createLink(
                 project
             );
             if(context.converter.application.options.getValue("excludeInherited")) {
+                // add to class/interface's set of names it inherits
+                if (target instanceof DeclarationReflection && !target.flags.isStatic) {
+                    var parent = target.parent;
+                    if (parent instanceof DeclarationReflection && parent.kindOf(ReflectionKind.ClassOrInterface)) {
+                        if (!parent.inheritedNames) parent.inheritedNames = new Set<string>();
+                        parent.inheritedNames.add(target.name);
+                    }
+                }
                 project.removeReflection(target);  // remove inherited reflection
             }
         } else {

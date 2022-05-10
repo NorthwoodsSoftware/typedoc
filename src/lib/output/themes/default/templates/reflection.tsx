@@ -93,6 +93,11 @@ export const reflectionTemplate = (context: DefaultThemeRenderContext, props: Pa
             </>
         )}
         {context.index(props.model)}
+        {props.model instanceof DeclarationReflection && !!props.model.inheritedMembers && (
+            <>
+                {context.inherited(props.model)}
+            </>
+        )}
         {context.members(props.model)}
     </>
 );

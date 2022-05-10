@@ -9,6 +9,7 @@ import type { DeclarationReflection } from "../models/reflections/declaration";
 export const SORT_STRATEGIES = [
     "source-order",
     "alphabetical",
+    "alphabeticalFull",
     "enum-value-ascending",
     "enum-value-descending",
     "static-first",
@@ -53,6 +54,9 @@ const sorts: Record<
     },
     alphabetical(a, b) {
         return a.name < b.name;
+    },
+    alphabeticalFull(a, b) {
+        return a.getFriendlyFullName() < b.getFriendlyFullName();
     },
     "enum-value-ascending"(a, b) {
         if (
