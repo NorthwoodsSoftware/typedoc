@@ -53,15 +53,24 @@ class FilterItemCheckbox extends FilterItem<boolean> {
         this.checkbox.addEventListener("change", () => {
             this.setValue(this.checkbox.checked);
         });
+
+        // ensure proper state in case there's no local storage set
+        this.setValue(this.checkbox.checked);
+        if (this.checkbox.checked) {
+            document.documentElement.classList.remove("toggle-" + this.key);
+        } else {
+            document.documentElement.classList.add("toggle-" + this.key);
+        }
     }
 
     protected handleValueChange(_oldValue: boolean, _newValue: boolean) {
         if (!this.checkbox) return;
         this.checkbox.checked = this.value;
-        document.documentElement.classList.toggle(
-            "toggle-" + this.key,
-            this.value != this.defaultValue
-        );
+        if (this.checkbox.checked) {
+            document.documentElement.classList.remove("toggle-" + this.key);
+        } else {
+            document.documentElement.classList.add("toggle-" + this.key);
+        }
     }
 
     protected fromLocalStorage(value: string): boolean {
@@ -152,7 +161,7 @@ export class Filter extends Component {
         super(options);
 
         this.optionVisibility = new FilterItemSelect("visibility", "private");
-        this.optionInherited = new FilterItemCheckbox("inherited", true);
+        this.optionInherited = new FilterItemCheckbox("inherited", false);
         this.optionExternals = new FilterItemCheckbox("externals", true);
     }
 
