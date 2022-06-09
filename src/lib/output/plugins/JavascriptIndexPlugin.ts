@@ -65,6 +65,7 @@ export class JavascriptIndexPlugin extends RendererComponent {
                 id: rows.length,
                 kind: reflection.kind,
                 fullName: reflection.name,
+                isCore: !reflection.flags.isExtension && !reflection.flags.isStorage,
                 url: reflection.url,
                 classes: reflection.cssClasses,
             };
@@ -72,6 +73,7 @@ export class JavascriptIndexPlugin extends RendererComponent {
             if (parent) {
                 row.parent = parent.getFullName();
                 row.fullName = `${row.parent}.${reflection.name}`;
+                row.isCore = !parent.flags.isExtension && !parent.flags.isStorage
             }
 
             rows.push(row);
@@ -84,11 +86,10 @@ export class JavascriptIndexPlugin extends RendererComponent {
         builder.field("fullName");
 
         rows.forEach((row) => {
-            if (!row.parent) {
-                builder.add(row, { boost: 100 });  // boost top-level reflections
-            } else {
-                builder.add(row);
-            }
+            let boost = 0;
+            if (!row.parent) boost += 100;  // boost top-level reflections
+            if (row.isCore) boost += 50;  // boost core reflections over extensions/storage
+            builder.add(row, { boost });
         });
 
         const index = builder.build();
