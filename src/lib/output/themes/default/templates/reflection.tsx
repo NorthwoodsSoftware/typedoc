@@ -12,7 +12,7 @@ export const reflectionTemplate = (context: DefaultThemeRenderContext, props: Pa
                     This is an extension and not part of the main GoJS library.
                     Note that the API for this class may change at any time.
                     If you intend to use an extension in production, you should copy the code to your own source directory.
-                    Extensions can be found in the GoJS kit under the <code>extensions</code>,
+                    Extensions can be found in the GoJS kit under the <code>extensions</code> (for loading via script tags),
                     <code>extensionsTS</code> (UMD modules), or <code>extensionsJSM</code> (ES6 modules) folders.
                     See the <a href={context.relativeURL("../intro/extensions.html")}>Extensions intro page</a> for more information.
                 </p>
