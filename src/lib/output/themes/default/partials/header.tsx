@@ -13,7 +13,7 @@ export function header(context: DefaultThemeRenderContext, props: PageEvent<Refl
                         <div class="md:pl-4">
                             <a class="text-white hover:text-white no-underline hover:no-underline
                             font-bold text-2xl lg:text-4xl rounded-lg hover:bg-nwoods-secondary" href={context.relativeURL("../index.html")}>
-                            <h1 class="mb-0 p-1 leading-none">GoJS</h1>
+                            <h1 class="my-0 p-1 leading-none">GoJS</h1>
                             </a>
                         </div>
                         <button id="topnavButton" class="rounded-lg sm:hidden focus:outline-none focus:ring" aria-label="Navigation">
